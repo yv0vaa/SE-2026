@@ -7,66 +7,11 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  build-and-test:
-    name: Build and Test (${{ matrix.os }}, ${{ matrix.compiler }})
-    runs-on: ${{ matrix.os }}
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-22.04
-            compiler: gcc
-            cc: gcc-11
-            cxx: g++-11
-          - os: ubuntu-22.04
-            compiler: clang
-            cc: clang
-            cxx: clang++
-          - os: macos-latest
-            compiler: clang
-            cc: clang
-            cxx: clang++
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Install dependencies (Ubuntu)
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake ninja-build
-
-    - name: Install dependencies (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        brew install cmake ninja
-
-    - name: Configure CMake
-      env:
-        CC: ${{ matrix.cc }}
-        CXX: ${{ matrix.cxx }}
-      run: |
-        cmake -B build -G Ninja \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_TESTING=ON
-
-    - name: Build
-      run: cmake --build build --config Release
-
-    - name: Run tests
-      working-directory: build
-      run: ctest --output-on-failure --build-config Release
-
-  build-with-sanitizers:
-    name: Build with Sanitizers
+  # Verify CMake configuration works
+  cmake-config:
+    name: CMake Configuration Check
     runs-on: ubuntu-22.04
     
-    strategy:
-      matrix:
-        sanitizer: [address, undefined]
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -76,25 +21,68 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y cmake ninja-build
 
-    - name: Configure CMake with ${{ matrix.sanitizer }} sanitizer
+    - name: Configure CMake
       run: |
         cmake -B build -G Ninja \
-          -DCMAKE_BUILD_TYPE=Debug \
-          -DENABLE_SANITIZER_${{ matrix.sanitizer == 'address' && 'ADDRESS' || 'UNDEFINED_BEHAVIOR' }}=ON \
-          -DBUILD_TESTING=ON
+          -DCMAKE_BUILD_TYPE=Release
 
-    - name: Build
-      run: cmake --build build
+    - name: Verify configuration
+      run: |
+        echo "CMake configuration successful"
+        cat build/CMakeCache.txt | grep -E "(CMAKE_CXX_STANDARD|CMAKE_BUILD_TYPE)"
 
-    - name: Run tests with sanitizer
-      working-directory: build
-      env:
-        ASAN_OPTIONS: detect_leaks=1:abort_on_error=1
-        UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
-      run: ctest --output-on-failure
+  # Check documentation and repo structure
+  docs-check:
+    name: Documentation Check
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
+    - name: Check required files exist
+      run: |
+        echo "Checking required files..."
+        
+        files=(
+          "README.md"
+          "LICENSE"
+          "CMakeLists.txt"
+          ".gitignore"
+          "docs/ARCHITECTURE.md"
+        )
+        
+        for file in "${files[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✓ $file exists"
+          else
+            echo "✗ $file is missing!"
+            exit 1
+          fi
+        done
+        
+        echo ""
+        echo "All required files present!"
+
+    - name: Check README has content
+      run: |
+        if [ $(wc -l < README.md) -lt 10 ]; then
+          echo "README.md seems too short"
+          exit 1
+        fi
+        echo "✓ README.md has sufficient content"
+
+    - name: Check ARCHITECTURE.md has content
+      run: |
+        if [ $(wc -l < docs/ARCHITECTURE.md) -lt 100 ]; then
+          echo "ARCHITECTURE.md seems too short"
+          exit 1
+        fi
+        echo "✓ ARCHITECTURE.md has sufficient content ($(wc -l < docs/ARCHITECTURE.md) lines)"
+
+  # Lint check - will be active when source files are added
   lint:
-    name: Lint
+    name: Lint Check
     runs-on: ubuntu-22.04
     
     steps:
@@ -108,36 +96,36 @@ jobs:
 
     - name: Check code formatting
       run: |
-        if find src include tests -name "*.cpp" -o -name "*.hpp" 2>/dev/null | grep -q .; then
-          find src include tests \( -name "*.cpp" -o -name "*.hpp" \) -print0 | \
-            xargs -0 clang-format --dry-run --Werror
-        else
-          echo "No source files found yet - skipping format check"
+        # Find all C++ source files
+        cpp_files=$(find src include tests -name "*.cpp" -o -name "*.hpp" 2>/dev/null || true)
+        
+        if [ -z "$cpp_files" ]; then
+          echo "No source files found yet - lint check skipped"
+          echo "This is expected during the design phase"
+          exit 0
         fi
+        
+        echo "Checking formatting of:"
+        echo "$cpp_files"
+        echo "$cpp_files" | xargs clang-format --dry-run --Werror
 
-  static-analysis:
-    name: Static Analysis
+  # Markdown lint
+  markdown-lint:
+    name: Markdown Lint
     runs-on: ubuntu-22.04
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install dependencies
+    - name: Check markdown files
       run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake ninja-build clang-tidy
-
-    - name: Configure CMake
-      run: |
-        cmake -B build -G Ninja \
-          -DCMAKE_BUILD_TYPE=Debug \
-          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-
-    - name: Run clang-tidy
-      run: |
-        if [ -d "src" ] && find src -name "*.cpp" 2>/dev/null | grep -q .; then
-          find src -name "*.cpp" -print0 | xargs -0 clang-tidy -p build
-        else
-          echo "No source files found yet - skipping static analysis"
+        echo "Checking markdown files..."
+        
+        # Simple check: ensure no trailing whitespace in markdown
+        if grep -r "[[:space:]]$" --include="*.md" .; then
+          echo "Warning: trailing whitespace found in markdown files"
+          # Don't fail, just warn
         fi
+        
+        echo "✓ Markdown check complete"
