@@ -15,14 +15,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             compiler: gcc
             cc: gcc-11
             cxx: g++-11
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             compiler: clang
-            cc: clang-14
-            cxx: clang++-14
+            cc: clang
+            cxx: clang++
           - os: macos-latest
             compiler: clang
             cc: clang
@@ -61,7 +61,7 @@ jobs:
 
   build-with-sanitizers:
     name: Build with Sanitizers
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     
     strategy:
       matrix:
@@ -74,12 +74,9 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake ninja-build clang-14
+        sudo apt-get install -y cmake ninja-build
 
     - name: Configure CMake with ${{ matrix.sanitizer }} sanitizer
-      env:
-        CC: clang-14
-        CXX: clang++-14
       run: |
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=Debug \
@@ -98,7 +95,7 @@ jobs:
 
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     
     steps:
     - name: Checkout repository
@@ -107,17 +104,20 @@ jobs:
     - name: Install clang-format
       run: |
         sudo apt-get update
-        sudo apt-get install -y clang-format-14
+        sudo apt-get install -y clang-format
 
     - name: Check code formatting
       run: |
-        find src include tests -name "*.cpp" -o -name "*.hpp" 2>/dev/null | \
-          xargs -r clang-format-14 --dry-run --Werror || \
+        if find src include tests -name "*.cpp" -o -name "*.hpp" 2>/dev/null | grep -q .; then
+          find src include tests \( -name "*.cpp" -o -name "*.hpp" \) -print0 | \
+            xargs -0 clang-format --dry-run --Werror
+        else
           echo "No source files found yet - skipping format check"
+        fi
 
   static-analysis:
     name: Static Analysis
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     
     steps:
     - name: Checkout repository
@@ -126,12 +126,9 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake ninja-build clang-14 clang-tidy-14
+        sudo apt-get install -y cmake ninja-build clang-tidy
 
     - name: Configure CMake
-      env:
-        CC: clang-14
-        CXX: clang++-14
       run: |
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=Debug \
@@ -139,8 +136,8 @@ jobs:
 
     - name: Run clang-tidy
       run: |
-        if [ -d "src" ] && [ "$(find src -name '*.cpp' 2>/dev/null | head -1)" ]; then
-          find src -name "*.cpp" | xargs clang-tidy-14 -p build
+        if [ -d "src" ] && find src -name "*.cpp" 2>/dev/null | grep -q .; then
+          find src -name "*.cpp" -print0 | xargs -0 clang-tidy -p build
         else
           echo "No source files found yet - skipping static analysis"
         fi

@@ -829,68 +829,61 @@ echo hello | cat | wc
 
 ## 11. Диаграммы
 
-### 11.1 Диаграмма классов (PlantUML)
+### 11.1 Диаграмма классов
 
-```plantuml
-@startuml
-
-skinparam classAttributeIconSize 0
-skinparam linetype ortho
-
-package "Core" {
+```mermaid
+classDiagram
+    direction TB
+    
+    %% Core classes
     class Shell {
-        - inputReader: InputReader
-        - substitutor: Substitutor
-        - lexer: Lexer
-        - parser: Parser
-        - pipelineBuilder: PipelineBuilder
-        - executor: Executor
-        - environment: Environment
-        --
-        + run(): int
-        - processLine(line: string): int
+        -InputReader inputReader
+        -Substitutor substitutor
+        -Lexer lexer
+        -Parser parser
+        -PipelineBuilder pipelineBuilder
+        -Executor executor
+        -Environment environment
+        +run() int
+        -processLine(line) int
     }
     
     class Environment {
-        - variables: map<string, string>
-        --
-        + get(name: string): string
-        + set(name: string, value: string): void
-        + unset(name: string): void
-        + contains(name: string): bool
-        + toEnvp(): vector<string>
-        + initFromSystem(): void
+        -map~string, string~ variables
+        +get(name) string
+        +set(name, value) void
+        +unset(name) void
+        +contains(name) bool
+        +toEnvp() vector~string~
+        +initFromSystem() void
     }
-}
-
-package "Parsing" {
+    
+    %% Parsing classes
     class InputReader {
-        --
-        + readLine(): optional<string>
+        +readLine() optional~string~
     }
     
     class Substitutor {
-        - env: Environment&
-        --
-        + substitute(input: string): string
-        - expandVariable(name: string): string
+        -Environment& env
+        +substitute(input) string
+        -expandVariable(name) string
     }
     
     class Lexer {
-        - input: string
-        - position: size_t
-        --
-        + tokenize(): vector<Token>
-        - readWord(): Token
-        - readQuotedString(quote: char): Token
+        -string input
+        -size_t position
+        +tokenize() vector~Token~
+        -readWord() Token
+        -readQuotedString(quote) Token
     }
     
     class Token {
-        + type: TokenType
-        + value: string
+        +TokenType type
+        +string value
     }
     
-    enum TokenType {
+    class TokenType {
+        <<enumeration>>
         WORD
         PIPE
         ASSIGNMENT
@@ -898,317 +891,312 @@ package "Parsing" {
     }
     
     class Parser {
-        - tokens: vector<Token>
-        - position: size_t
-        --
-        + parse(): ParsedCommand*
-        - parseSimpleCommand(): ParsedSimpleCommand
-        - parsePipeline(): ParsedPipeline
-        - parseAssignment(): ParsedAssignment
+        -vector~Token~ tokens
+        -size_t position
+        +parse() ParsedCommand*
+        -parseSimpleCommand() ParsedSimpleCommand
+        -parsePipeline() ParsedPipeline
+        -parseAssignment() ParsedAssignment
     }
     
-    abstract class ParsedCommand {
-        + {abstract} isAssignment(): bool
-        + {abstract} isPipeline(): bool
+    class ParsedCommand {
+        <<abstract>>
+        +isAssignment()* bool
+        +isPipeline()* bool
     }
     
     class ParsedAssignment {
-        + variableName: string
-        + value: string
-        --
-        + isAssignment(): bool
+        +string variableName
+        +string value
+        +isAssignment() bool
     }
     
     class ParsedSimpleCommand {
-        + commandName: string
-        + arguments: vector<string>
+        +string commandName
+        +vector~string~ arguments
     }
     
     class ParsedPipeline {
-        + commands: vector<ParsedSimpleCommand>
-        --
-        + isPipeline(): bool
+        +vector~ParsedSimpleCommand~ commands
+        +isPipeline() bool
     }
-}
-
-package "Commands" {
-    abstract class Command {
-        + {abstract} execute(in: istream&, out: ostream&, err: ostream&): int
-        + {abstract} setArguments(args: vector<string>): void
-        + {abstract} getName(): string
+    
+    %% Command classes
+    class Command {
+        <<abstract>>
+        +execute(in, out, err)* int
+        +setArguments(args)* void
+        +getName()* string
     }
     
     class EchoCommand {
-        - args: vector<string>
-        --
-        + execute(...): int
+        -vector~string~ args
+        +execute(in, out, err) int
     }
     
     class CatCommand {
-        - filenames: vector<string>
-        --
-        + execute(...): int
+        -vector~string~ filenames
+        +execute(in, out, err) int
     }
     
     class WcCommand {
-        - filenames: vector<string>
-        --
-        + execute(...): int
+        -vector~string~ filenames
+        +execute(in, out, err) int
     }
     
     class PwdCommand {
-        --
-        + execute(...): int
+        +execute(in, out, err) int
     }
     
     class ExitCommand {
-        - exitRequested: bool
-        - exitCode: int
-        --
-        + execute(...): int
-        + wasExitRequested(): bool
-        + getExitCode(): int
+        -bool exitRequested
+        -int exitCode
+        +execute(in, out, err) int
+        +wasExitRequested() bool
+        +getExitCode() int
     }
     
     class ExternalCommand {
-        - programPath: string
-        - args: vector<string>
-        - env: Environment&
-        --
-        + execute(...): int
-        - findExecutable(): optional<string>
+        -string programPath
+        -vector~string~ args
+        -Environment& env
+        +execute(in, out, err) int
+        -findExecutable() optional~string~
     }
     
     class CommandFactory {
-        - env: Environment&
-        - builtinFactories: map<string, function>
-        --
-        + create(name: string): unique_ptr<Command>
-        - registerBuiltins(): void
+        -Environment& env
+        -map builtinFactories
+        +create(name) unique_ptr~Command~
+        -registerBuiltins() void
     }
-}
-
-package "Execution" {
+    
+    %% Execution classes
     class Pipeline {
-        - commands: vector<unique_ptr<Command>>
-        --
-        + addCommand(cmd: unique_ptr<Command>): void
-        + size(): size_t
-        + getCommand(index: size_t): Command&
-        + isEmpty(): bool
+        -vector~unique_ptr~Command~~ commands
+        +addCommand(cmd) void
+        +size() size_t
+        +getCommand(index) Command&
+        +isEmpty() bool
     }
     
     class PipelineBuilder {
-        - factory: CommandFactory&
-        --
-        + build(parsed: ParsedPipeline&): Pipeline
+        -CommandFactory& factory
+        +build(parsed) Pipeline
     }
     
     class Executor {
-        - env: Environment&
-        - exitRequested: bool
-        - exitCode: int
-        --
-        + execute(pipeline: Pipeline&): int
-        + executeAssignment(assignment: ParsedAssignment&): int
-        + shouldExit(): bool
-        + getExitCode(): int
-        - executeSingleCommand(cmd: Command&): int
-        - executePipeline(pipeline: Pipeline&): int
+        -Environment& env
+        -bool exitRequested
+        -int exitCode
+        +execute(pipeline) int
+        +executeAssignment(assignment) int
+        +shouldExit() bool
+        +getExitCode() int
+        -executeSingleCommand(cmd) int
+        -executePipeline(pipeline) int
     }
-}
-
-' Relationships
-Shell --> InputReader
-Shell --> Substitutor
-Shell --> Lexer
-Shell --> Parser
-Shell --> PipelineBuilder
-Shell --> Executor
-Shell --> Environment
-
-Substitutor --> Environment
-Lexer --> Token
-Token --> TokenType
-Parser --> ParsedCommand
-
-ParsedCommand <|-- ParsedAssignment
-ParsedCommand <|-- ParsedPipeline
-ParsedPipeline --> ParsedSimpleCommand
-
-Command <|-- EchoCommand
-Command <|-- CatCommand
-Command <|-- WcCommand
-Command <|-- PwdCommand
-Command <|-- ExitCommand
-Command <|-- ExternalCommand
-
-CommandFactory --> Command
-CommandFactory --> Environment
-ExternalCommand --> Environment
-
-PipelineBuilder --> CommandFactory
-PipelineBuilder --> Pipeline
-Pipeline --> Command
-Executor --> Pipeline
-Executor --> Environment
-
-@enduml
+    
+    %% Relationships
+    Shell --> InputReader
+    Shell --> Substitutor
+    Shell --> Lexer
+    Shell --> Parser
+    Shell --> PipelineBuilder
+    Shell --> Executor
+    Shell --> Environment
+    
+    Substitutor --> Environment
+    Lexer --> Token
+    Token --> TokenType
+    Parser --> ParsedCommand
+    
+    ParsedCommand <|-- ParsedAssignment
+    ParsedCommand <|-- ParsedPipeline
+    ParsedPipeline --> ParsedSimpleCommand
+    
+    Command <|-- EchoCommand
+    Command <|-- CatCommand
+    Command <|-- WcCommand
+    Command <|-- PwdCommand
+    Command <|-- ExitCommand
+    Command <|-- ExternalCommand
+    
+    CommandFactory --> Command
+    CommandFactory --> Environment
+    ExternalCommand --> Environment
+    
+    PipelineBuilder --> CommandFactory
+    PipelineBuilder --> Pipeline
+    Pipeline --> Command
+    Executor --> Pipeline
+    Executor --> Environment
 ```
 
 ### 11.2 Диаграмма последовательности (обработка команды)
 
-```plantuml
-@startuml
+```mermaid
+sequenceDiagram
+    actor User
+    participant Shell
+    participant InputReader
+    participant Substitutor
+    participant Environment
+    participant Lexer
+    participant Parser
+    participant PipelineBuilder
+    participant CommandFactory
+    participant Executor
+    participant Command
 
-actor User
-participant Shell
-participant InputReader
-participant Substitutor
-participant Lexer
-participant Parser
-participant PipelineBuilder
-participant CommandFactory
-participant Executor
-participant Command
-participant Environment
-
-User -> Shell: запуск
-activate Shell
-
-loop REPL
-    Shell -> InputReader: readLine()
-    activate InputReader
-    InputReader -> User: prompt "> "
-    User -> InputReader: "echo $HOME | wc"
-    InputReader --> Shell: "echo $HOME | wc"
-    deactivate InputReader
+    User->>Shell: запуск
+    activate Shell
     
-    Shell -> Substitutor: substitute("echo $HOME | wc")
-    activate Substitutor
-    Substitutor -> Environment: get("HOME")
-    Environment --> Substitutor: "/home/user"
-    Substitutor --> Shell: "echo /home/user | wc"
-    deactivate Substitutor
+    loop REPL
+        Shell->>InputReader: readLine()
+        activate InputReader
+        InputReader->>User: prompt "> "
+        User->>InputReader: "echo $HOME | wc"
+        InputReader-->>Shell: "echo $HOME | wc"
+        deactivate InputReader
+        
+        Shell->>Substitutor: substitute("echo $HOME | wc")
+        activate Substitutor
+        Substitutor->>Environment: get("HOME")
+        Environment-->>Substitutor: "/home/user"
+        Substitutor-->>Shell: "echo /home/user | wc"
+        deactivate Substitutor
+        
+        Shell->>Lexer: tokenize("echo /home/user | wc")
+        activate Lexer
+        Lexer-->>Shell: [WORD, WORD, PIPE, WORD]
+        deactivate Lexer
+        
+        Shell->>Parser: parse(tokens)
+        activate Parser
+        Parser-->>Shell: ParsedPipeline
+        deactivate Parser
+        
+        Shell->>PipelineBuilder: build(parsedPipeline)
+        activate PipelineBuilder
+        PipelineBuilder->>CommandFactory: create("echo")
+        CommandFactory-->>PipelineBuilder: EchoCommand
+        PipelineBuilder->>CommandFactory: create("wc")
+        CommandFactory-->>PipelineBuilder: WcCommand
+        PipelineBuilder-->>Shell: Pipeline
+        deactivate PipelineBuilder
+        
+        Shell->>Executor: execute(pipeline)
+        activate Executor
+        
+        Note over Executor,Command: echo записывает "/home/user\n" в buffer
+        Executor->>Command: execute(stdin, buffer, stderr)
+        Command-->>Executor: 0
+        
+        Note over Executor,Command: wc читает из buffer, выводит "1 1 11"
+        Executor->>Command: execute(buffer, stdout, stderr)
+        Command-->>Executor: 0
+        
+        Executor->>Environment: set("?", "0")
+        Executor-->>Shell: 0
+        deactivate Executor
+        
+        Shell->>User: вывод результата
+    end
     
-    Shell -> Lexer: tokenize("echo /home/user | wc")
-    activate Lexer
-    Lexer --> Shell: [WORD("echo"), WORD("/home/user"), PIPE, WORD("wc")]
-    deactivate Lexer
-    
-    Shell -> Parser: parse(tokens)
-    activate Parser
-    Parser --> Shell: ParsedPipeline{[echo, /home/user], [wc]}
-    deactivate Parser
-    
-    Shell -> PipelineBuilder: build(parsedPipeline)
-    activate PipelineBuilder
-    PipelineBuilder -> CommandFactory: create("echo")
-    CommandFactory --> PipelineBuilder: EchoCommand
-    PipelineBuilder -> CommandFactory: create("wc")
-    CommandFactory --> PipelineBuilder: WcCommand
-    PipelineBuilder --> Shell: Pipeline
-    deactivate PipelineBuilder
-    
-    Shell -> Executor: execute(pipeline)
-    activate Executor
-    
-    Executor -> Command: execute(stdin, buffer, stderr)
-    note right: echo записывает\n"/home/user\n" в buffer
-    Command --> Executor: 0
-    
-    Executor -> Command: execute(buffer, stdout, stderr)
-    note right: wc читает из buffer,\nвыводит "1 1 11"
-    Command --> Executor: 0
-    
-    Executor -> Environment: set("?", "0")
-    Executor --> Shell: 0
-    deactivate Executor
-    
-    Shell -> User: вывод результата
-end
-
-@enduml
+    deactivate Shell
 ```
 
 ### 11.3 Диаграмма компонентов
 
-```plantuml
-@startuml
-
-skinparam componentStyle rectangle
-
-package "Shell Interpreter" {
+```mermaid
+flowchart TB
+    subgraph External["Внешние интерфейсы"]
+        STDIN[stdin]
+        STDOUT[stdout]
+        STDERR[stderr]
+        FS[(Filesystem)]
+        OS[OS Process API]
+    end
     
-    component [Shell\n(главный модуль)] as Shell
+    subgraph ShellInterpreter["Shell Interpreter"]
+        subgraph Core["Core"]
+            Shell[Shell<br/>главный модуль]
+            ENV[Environment]
+        end
+        
+        subgraph InputProcessing["Input Processing"]
+            IR[InputReader]
+            SUB[Substitutor]
+            LEX[Lexer]
+            PAR[Parser]
+        end
+        
+        subgraph CommandInfra["Command Infrastructure"]
+            CF[CommandFactory]
+            PL[Pipeline]
+            PB[PipelineBuilder]
+            EX[Executor]
+        end
+        
+        subgraph Commands["Commands"]
+            ECHO[EchoCommand]
+            CAT[CatCommand]
+            WC[WcCommand]
+            PWD[PwdCommand]
+            EXIT[ExitCommand]
+            EXT[ExternalCommand]
+        end
+    end
     
-    package "Input Processing" {
-        component [InputReader] as IR
-        component [Substitutor] as SUB
-        component [Lexer] as LEX
-        component [Parser] as PAR
-    }
+    STDIN --> IR
+    Shell --> STDOUT
+    Shell --> STDERR
     
-    package "Command Infrastructure" {
-        component [CommandFactory] as CF
-        component [Pipeline] as PL
-        component [PipelineBuilder] as PB
-        component [Executor] as EX
-    }
+    Shell --> IR
+    Shell --> SUB
+    Shell --> LEX
+    Shell --> PAR
+    Shell --> PB
+    Shell --> EX
+    Shell --> ENV
     
-    package "Commands" {
-        component [EchoCommand] as ECHO
-        component [CatCommand] as CAT
-        component [WcCommand] as WC
-        component [PwdCommand] as PWD
-        component [ExitCommand] as EXIT
-        component [ExternalCommand] as EXT
-    }
+    SUB --> ENV
+    PB --> CF
+    CF --> ENV
     
-    component [Environment] as ENV
-}
+    CF --> ECHO
+    CF --> CAT
+    CF --> WC
+    CF --> PWD
+    CF --> EXIT
+    CF --> EXT
+    
+    PB --> PL
+    EX --> PL
+    EX --> ENV
+    
+    CAT --> FS
+    EXT --> OS
+    EXT --> ENV
+    PWD --> FS
+```
 
-' External interfaces
-interface "stdin" as STDIN
-interface "stdout" as STDOUT
-interface "stderr" as STDERR
-interface "filesystem" as FS
-interface "OS process API" as OS
+### 11.4 Диаграмма потока данных
 
-' Connections
-STDIN --> IR
-Shell --> STDOUT
-Shell --> STDERR
-
-Shell --> IR
-Shell --> SUB
-Shell --> LEX
-Shell --> PAR
-Shell --> PB
-Shell --> EX
-Shell --> ENV
-
-SUB --> ENV
-PB --> CF
-CF --> ENV
-
-CF --> ECHO
-CF --> CAT
-CF --> WC
-CF --> PWD
-CF --> EXIT
-CF --> EXT
-
-PB --> PL
-EX --> PL
-EX --> ENV
-
-CAT --> FS
-EXT --> OS
-EXT --> ENV
-PWD --> FS
-
-@enduml
+```mermaid
+flowchart LR
+    A[Ввод пользователя<br/>'echo $HOME ∣ wc'] --> B[Substitutor]
+    B -->|"echo /home/user ∣ wc"| C[Lexer]
+    C -->|"Tokens: [WORD, WORD, PIPE, WORD]"| D[Parser]
+    D -->|"AST: ParsedPipeline"| E[PipelineBuilder]
+    E -->|"Pipeline объект"| F[Executor]
+    F --> G[EchoCommand]
+    G -->|"/home/user\n"| H[WcCommand]
+    H -->|"1 1 11\n"| I[stdout]
+    
+    ENV[(Environment)] -.->|"HOME=/home/user"| B
+    F -.->|"set ? = 0"| ENV
 ```
 
 ---
