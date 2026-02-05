@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # Verify CMake configuration works
+  cmake-config:
+    name: CMake Configuration Check
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release
+
+    - name: Verify configuration
+      run: |
+        echo "CMake configuration successful"
+        cat build/CMakeCache.txt | grep -E "(CMAKE_CXX_STANDARD|CMAKE_BUILD_TYPE)"
+
+  # Check documentation and repo structure
+  docs-check:
+    name: Documentation Check
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Check required files exist
+      run: |
+        echo "Checking required files..."
+        
+        files=(
+          "README.md"
+          "LICENSE"
+          "CMakeLists.txt"
+          ".gitignore"
+          "docs/ARCHITECTURE.md"
+        )
+        
+        for file in "${files[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✓ $file exists"
+          else
+            echo "✗ $file is missing!"
+            exit 1
+          fi
+        done
+        
+        echo ""
+        echo "All required files present!"
+
+    - name: Check README has content
+      run: |
+        if [ $(wc -l < README.md) -lt 10 ]; then
+          echo "README.md seems too short"
+          exit 1
+        fi
+        echo "✓ README.md has sufficient content"
+
+    - name: Check ARCHITECTURE.md has content
+      run: |
+        if [ $(wc -l < docs/ARCHITECTURE.md) -lt 100 ]; then
+          echo "ARCHITECTURE.md seems too short"
+          exit 1
+        fi
+        echo "✓ ARCHITECTURE.md has sufficient content ($(wc -l < docs/ARCHITECTURE.md) lines)"
+
+  # Lint check - will be active when source files are added
+  lint:
+    name: Lint Check
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install clang-format
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format
+
+    - name: Check code formatting
+      run: |
+        # Find all C++ source files
+        cpp_files=$(find src include tests -name "*.cpp" -o -name "*.hpp" 2>/dev/null || true)
+        
+        if [ -z "$cpp_files" ]; then
+          echo "No source files found yet - lint check skipped"
+          echo "This is expected during the design phase"
+          exit 0
+        fi
+        
+        echo "Checking formatting of:"
+        echo "$cpp_files"
+        echo "$cpp_files" | xargs clang-format --dry-run --Werror
+
+  # Markdown lint
+  markdown-lint:
+    name: Markdown Lint
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Check markdown files
+      run: |
+        echo "Checking markdown files..."
+        
+        # Simple check: ensure no trailing whitespace in markdown
+        if grep -r "[[:space:]]$" --include="*.md" .; then
+          echo "Warning: trailing whitespace found in markdown files"
+          # Don't fail, just warn
+        fi
+        
+        echo "✓ Markdown check complete"
