@@ -105,22 +105,68 @@ cmake -DCMAKE_BUILD_TYPE=Debug \
 cmake --build .
 ```
 
+## Настройка окружения разработчика
+
+### Установка git-хуков
+
+Перед началом работы установите git-хуки для автоматических проверок:
+
+```bash
+./scripts/install-hooks.sh
+```
+
+Это установит **pre-push hook**, который перед каждым пушем:
+1. ✅ Проверяет и автоматически форматирует код (`clang-format`)
+2. ✅ Запускает статический анализ (`clang-tidy`)
+3. ✅ Собирает проект
+4. ✅ Запускает все 70 тестов
+
+Для пропуска проверок (не рекомендуется):
+```bash
+git push --no-verify           # пропустить всё
+SKIP_FORMAT=1 git push         # пропустить форматирование
+SKIP_TIDY=1 git push           # пропустить clang-tidy
+```
+
+### Рекомендуемые инструменты
+
+- `clang-format` — автоформатирование кода
+- `clang-tidy` — статический анализ
+- `cmake` 3.16+
+
+На macOS:
+```bash
+brew install cmake llvm
+```
+
+На Ubuntu:
+```bash
+sudo apt install cmake clang-format clang-tidy
+```
+
 ## Структура проекта
 
 ```
 SE-2026/
 ├── docs/
-│   └── ARCHITECTURE.md     # Архитектурная документация
+│   └── ARCHITECTURE.md       # Архитектурная документация
 ├── include/
-│   └── shell/              # Заголовочные файлы
-├── src/                    # Исходный код
-├── tests/                  # Модульные тесты
+│   └── shell/                # Заголовочные файлы
+│       └── commands/         # Команды
+├── src/
+│   └── shell/                # Исходный код
+│       └── commands/         # Реализации команд
+├── tests/                    # Модульные тесты (70 тестов)
+├── scripts/
+│   ├── install-hooks.sh      # Установка git-хуков
+│   ├── pre-push              # Pre-push hook
+│   └── check.sh              # Локальный скрипт проверки
 ├── .github/
 │   └── workflows/
-│       └── ci.yml          # CI конфигурация
-├── CMakeLists.txt          # Конфигурация сборки
-├── .gitignore
-├── LICENSE
+│       └── ci.yml            # CI конфигурация
+├── CMakeLists.txt            # Конфигурация сборки
+├── .clang-format             # Настройки форматирования
+├── .clang-tidy               # Настройки статического анализа
 └── README.md
 ```
 
