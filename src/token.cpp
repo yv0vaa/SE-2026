@@ -2,8 +2,8 @@
 
 namespace shell {
 
-Token::Token(TokenType type, std::string value)
-    : type(type), value(std::move(value)) {}
+Token::Token(TokenType t, std::string v)
+    : type(t), value(std::move(v)) {}
 
 bool Token::operator==(const Token& other) const {
     return type == other.type && value == other.value;
