@@ -54,4 +54,4 @@ void Environment::initFromSystem() {
     variables_["?"] = "0";
 }
 
-} // namespace shell
+}  // namespace shell

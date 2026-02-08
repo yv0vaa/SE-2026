@@ -4,8 +4,7 @@
 
 namespace shell {
 
-Lexer::Lexer(const std::string& input)
-    : input_(input), position_(0) {}
+Lexer::Lexer(const std::string& input) : input_(input), position_(0) {}
 
 std::vector<Token> Lexer::tokenize() {
     std::vector<Token> tokens;
@@ -48,8 +47,7 @@ char Lexer::advance() {
 }
 
 void Lexer::skipWhitespace() {
-    while (position_ < input_.size() && 
-           (input_[position_] == ' ' || input_[position_] == '\t')) {
+    while (position_ < input_.size() && (input_[position_] == ' ' || input_[position_] == '\t')) {
         position_++;
     }
 }
@@ -77,14 +75,14 @@ Token Lexer::readWord() {
 }
 
 Token Lexer::readQuotedString(char quote) {
-    advance(); // Пропускаем открывающую кавычку
+    advance();  // Пропускаем открывающую кавычку
     std::string value;
 
     while (position_ < input_.size()) {
         char c = peek();
 
         if (c == quote) {
-            advance(); // Пропускаем закрывающую кавычку
+            advance();  // Пропускаем закрывающую кавычку
             return Token(TokenType::WORD, value);
         }
 
@@ -92,7 +90,7 @@ Token Lexer::readQuotedString(char quote) {
         if (quote == '"' && c == '\\' && position_ + 1 < input_.size()) {
             char next = input_[position_ + 1];
             if (next == '"' || next == '\\' || next == '$') {
-                advance(); // Пропускаем backslash
+                advance();  // Пропускаем backslash
                 value += advance();
                 continue;
             }
@@ -113,4 +111,4 @@ bool Lexer::isWordChar(char c) const {
     return c != ' ' && c != '\t' && c != '|' && c != '\0';
 }
 
-} // namespace shell
+}  // namespace shell

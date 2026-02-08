@@ -4,13 +4,10 @@
 
 namespace shell {
 
-int ExitCommand::execute(
-    std::istream& /*in*/,
-    std::ostream& /*out*/,
-    std::ostream& /*err*/
+int ExitCommand::execute(std::istream& /*in*/, std::ostream& /*out*/, std::ostream& /*err*/
 ) {
     exitRequested_ = true;
-    
+
     if (!args_.empty()) {
         try {
             exitCode_ = std::stoi(args_[0]);
@@ -20,7 +17,7 @@ int ExitCommand::execute(
     } else {
         exitCode_ = 0;
     }
-    
+
     return exitCode_;
 }
 
@@ -28,4 +25,4 @@ void ExitCommand::setArguments(const std::vector<std::string>& args) {
     args_ = args;
 }
 
-} // namespace shell
+}  // namespace shell

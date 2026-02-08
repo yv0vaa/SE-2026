@@ -2,8 +2,7 @@
 
 namespace shell {
 
-Substitutor::Substitutor(Environment& env)
-    : env_(env) {}
+Substitutor::Substitutor(Environment& env) : env_(env) {}
 
 std::string Substitutor::substitute(const std::string& input) const {
     std::string result;
@@ -21,13 +20,13 @@ std::string Substitutor::substitute(const std::string& input) const {
                 i++;
             }
             if (i < input.size()) {
-                result += input[i]; // закрывающая кавычка
+                result += input[i];  // закрывающая кавычка
                 i++;
             }
         }
         // Подстановка переменных
         else if (c == '$') {
-            i++; // пропускаем $
+            i++;  // пропускаем $
 
             if (i >= input.size()) {
                 result += '$';
@@ -36,14 +35,14 @@ std::string Substitutor::substitute(const std::string& input) const {
 
             // ${VAR} формат
             if (input[i] == '{') {
-                i++; // пропускаем {
+                i++;  // пропускаем {
                 std::string varName;
                 while (i < input.size() && input[i] != '}') {
                     varName += input[i];
                     i++;
                 }
                 if (i < input.size()) {
-                    i++; // пропускаем }
+                    i++;  // пропускаем }
                 }
                 result += env_.get(varName);
             }
@@ -65,8 +64,7 @@ std::string Substitutor::substitute(const std::string& input) const {
             else {
                 result += '$';
             }
-        }
-        else {
+        } else {
             result += c;
             i++;
         }
@@ -76,16 +74,11 @@ std::string Substitutor::substitute(const std::string& input) const {
 }
 
 bool Substitutor::isValidVarChar(char c) const {
-    return (c >= 'a' && c <= 'z') ||
-           (c >= 'A' && c <= 'Z') ||
-           (c >= '0' && c <= '9') ||
-           c == '_';
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
 }
 
 bool Substitutor::isValidVarStartChar(char c) const {
-    return (c >= 'a' && c <= 'z') ||
-           (c >= 'A' && c <= 'Z') ||
-           c == '_';
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
 
-} // namespace shell
+}  // namespace shell

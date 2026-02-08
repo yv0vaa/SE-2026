@@ -12,9 +12,15 @@ namespace shell {
 class ParsedCommand {
 public:
     virtual ~ParsedCommand() = default;
-    virtual bool isAssignment() const { return false; }
-    virtual bool isPipeline() const { return false; }
-    virtual bool isEmpty() const { return false; }
+    virtual bool isAssignment() const {
+        return false;
+    }
+    virtual bool isPipeline() const {
+        return false;
+    }
+    virtual bool isEmpty() const {
+        return false;
+    }
 };
 
 /**
@@ -22,7 +28,9 @@ public:
  */
 class ParsedEmpty : public ParsedCommand {
 public:
-    bool isEmpty() const override { return true; }
+    bool isEmpty() const override {
+        return true;
+    }
 };
 
 /**
@@ -35,7 +43,9 @@ public:
 
     ParsedAssignment(std::string name, std::string val);
 
-    bool isAssignment() const override { return true; }
+    bool isAssignment() const override {
+        return true;
+    }
 };
 
 /**
@@ -57,7 +67,9 @@ class ParsedPipeline : public ParsedCommand {
 public:
     std::vector<ParsedSimpleCommand> commands;
 
-    bool isPipeline() const override { return true; }
+    bool isPipeline() const override {
+        return true;
+    }
 
     void addCommand(ParsedSimpleCommand cmd);
 };
@@ -69,9 +81,11 @@ class ParsedAssignmentList : public ParsedCommand {
 public:
     std::vector<ParsedAssignment> assignments;
 
-    bool isAssignment() const override { return true; }
+    bool isAssignment() const override {
+        return true;
+    }
 
     void addAssignment(ParsedAssignment assignment);
 };
 
-} // namespace shell
+}  // namespace shell

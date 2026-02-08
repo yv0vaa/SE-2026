@@ -15,7 +15,7 @@ namespace shell {
 
 /**
  * @brief Главный класс интерпретатора командной оболочки
- * 
+ *
  * Управляет REPL-циклом и координирует работу всех компонентов.
  */
 class Shell {
@@ -38,7 +38,9 @@ public:
     /**
      * @brief Получить ссылку на окружение (для тестов)
      */
-    Environment& getEnvironment() { return environment_; }
+    Environment& getEnvironment() {
+        return environment_;
+    }
 
 private:
     Environment environment_;
@@ -49,4 +51,4 @@ private:
     Executor executor_;
 };
 
-} // namespace shell
+}  // namespace shell

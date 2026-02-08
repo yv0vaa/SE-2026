@@ -18,4 +18,4 @@ bool Pipeline::isEmpty() const {
     return commands_.empty();
 }
 
-} // namespace shell
+}  // namespace shell

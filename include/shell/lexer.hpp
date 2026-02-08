@@ -9,7 +9,7 @@ namespace shell {
 
 /**
  * @brief Лексический анализатор командной строки
- * 
+ *
  * Разбивает входную строку на токены с учётом:
  * - Кавычек (одинарных и двойных)
  * - Специальных символов (|, =)
@@ -42,4 +42,4 @@ private:
     bool isWordChar(char c) const;
 };
 
-} // namespace shell
+}  // namespace shell

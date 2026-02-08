@@ -9,7 +9,7 @@ namespace shell {
 
 /**
  * @brief Пайплайн — последовательность команд
- * 
+ *
  * Представляет конвейер команд, связанных через pipe.
  */
 class Pipeline {
@@ -42,11 +42,15 @@ public:
     /**
      * @brief Получить итератор на начало
      */
-    auto begin() { return commands_.begin(); }
-    auto end() { return commands_.end(); }
+    auto begin() {
+        return commands_.begin();
+    }
+    auto end() {
+        return commands_.end();
+    }
 
 private:
     std::vector<std::unique_ptr<Command>> commands_;
 };
 
-} // namespace shell
+}  // namespace shell

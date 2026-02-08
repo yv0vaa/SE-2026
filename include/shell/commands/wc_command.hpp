@@ -9,15 +9,13 @@ namespace shell {
  */
 class WcCommand : public Command {
 public:
-    int execute(
-        std::istream& in,
-        std::ostream& out,
-        std::ostream& err
-    ) override;
+    int execute(std::istream& in, std::ostream& out, std::ostream& err) override;
 
     void setArguments(const std::vector<std::string>& args) override;
 
-    std::string getName() const override { return "wc"; }
+    std::string getName() const override {
+        return "wc";
+    }
 
 private:
     std::vector<std::string> filenames_;
@@ -32,4 +30,4 @@ private:
     void printCounts(std::ostream& out, const Counts& counts, const std::string& filename = "");
 };
 
-} // namespace shell
+}  // namespace shell

@@ -16,4 +16,4 @@ void ParsedAssignmentList::addAssignment(ParsedAssignment assignment) {
     assignments.push_back(std::move(assignment));
 }
 
-} // namespace shell
+}  // namespace shell

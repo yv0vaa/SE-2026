@@ -8,7 +8,7 @@ namespace shell {
 
 /**
  * @brief Строитель пайплайнов
- * 
+ *
  * Создаёт объекты Pipeline из AST (ParsedPipeline).
  */
 class PipelineBuilder {
@@ -30,4 +30,4 @@ private:
     CommandFactory& factory_;
 };
 
-} // namespace shell
+}  // namespace shell

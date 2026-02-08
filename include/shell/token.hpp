@@ -8,10 +8,10 @@ namespace shell {
  * @brief Типы токенов лексического анализа
  */
 enum class TokenType {
-    WORD,           ///< Обычное слово или строка в кавычках
-    PIPE,           ///< Символ |
-    ASSIGNMENT,     ///< Оператор = (в контексте VAR=VALUE)
-    END_OF_INPUT    ///< Конец ввода
+    WORD,         ///< Обычное слово или строка в кавычках
+    PIPE,         ///< Символ |
+    ASSIGNMENT,   ///< Оператор = (в контексте VAR=VALUE)
+    END_OF_INPUT  ///< Конец ввода
 };
 
 /**
@@ -33,4 +33,4 @@ public:
  */
 std::string tokenTypeToString(TokenType type);
 
-} // namespace shell
+}  // namespace shell

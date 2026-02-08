@@ -9,7 +9,7 @@ namespace shell {
 
 /**
  * @brief Внешняя команда — запуск произвольной программы
- * 
+ *
  * Создаёт дочерний процесс и выполняет программу через execve.
  */
 class ExternalCommand : public Command {
@@ -21,15 +21,13 @@ public:
      */
     ExternalCommand(const std::string& programName, Environment& env);
 
-    int execute(
-        std::istream& in,
-        std::ostream& out,
-        std::ostream& err
-    ) override;
+    int execute(std::istream& in, std::ostream& out, std::ostream& err) override;
 
     void setArguments(const std::vector<std::string>& args) override;
 
-    std::string getName() const override { return programName_; }
+    std::string getName() const override {
+        return programName_;
+    }
 
 private:
     std::string programName_;
@@ -43,4 +41,4 @@ private:
     std::optional<std::string> findExecutable() const;
 };
 
-} // namespace shell
+}  // namespace shell

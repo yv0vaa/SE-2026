@@ -1,21 +1,17 @@
 #include "shell/commands/external_command.hpp"
 
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include <cstring>
 #include <sstream>
+
+#include <sys/wait.h>
+#include <unistd.h>
 
 namespace shell {
 
 ExternalCommand::ExternalCommand(const std::string& programName, Environment& env)
     : programName_(programName), env_(env) {}
 
-int ExternalCommand::execute(
-    std::istream& in,
-    std::ostream& out,
-    std::ostream& err
-) {
+int ExternalCommand::execute(std::istream& in, std::ostream& out, std::ostream& err) {
     // Ищем исполняемый файл
     auto execPath = findExecutable();
     if (!execPath) {
@@ -41,7 +37,7 @@ int ExternalCommand::execute(
 
     if (pid == 0) {
         // Дочерний процесс
-        
+
         // Перенаправляем stdin
         close(stdinPipe[1]);
         dup2(stdinPipe[0], STDIN_FILENO);
@@ -76,7 +72,7 @@ int ExternalCommand::execute(
     }
 
     // Родительский процесс
-    
+
     // Закрываем ненужные концы каналов
     close(stdinPipe[0]);
     close(stdoutPipe[1]);
@@ -85,10 +81,10 @@ int ExternalCommand::execute(
     std::stringstream inputBuffer;
     inputBuffer << in.rdbuf();
     std::string inputData = inputBuffer.str();
-    
+
     if (!inputData.empty()) {
         ssize_t written = write(stdinPipe[1], inputData.c_str(), inputData.size());
-        (void)written; // Игнорируем возможные ошибки записи
+        (void)written;  // Игнорируем возможные ошибки записи
     }
     close(stdinPipe[1]);
 
@@ -146,4 +142,4 @@ std::optional<std::string> ExternalCommand::findExecutable() const {
     return std::nullopt;
 }
 
-} // namespace shell
+}  // namespace shell

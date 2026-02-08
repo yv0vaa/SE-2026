@@ -41,4 +41,4 @@ private:
     bool showPrompt_ = true;
 };
 
-} // namespace shell
+}  // namespace shell

@@ -8,10 +8,10 @@ namespace shell {
 
 /**
  * @brief Подстановщик переменных окружения
- * 
+ *
  * Заменяет вхождения $VAR и ${VAR} на соответствующие значения
  * из Environment. Выполняется ДО токенизации.
- * 
+ *
  * Важно: внутри одинарных кавычек подстановка не выполняется.
  */
 class Substitutor {
@@ -36,4 +36,4 @@ private:
     bool isValidVarStartChar(char c) const;
 };
 
-} // namespace shell
+}  // namespace shell

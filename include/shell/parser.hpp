@@ -10,7 +10,7 @@ namespace shell {
 
 /**
  * @brief Синтаксический анализатор
- * 
+ *
  * Строит AST (абстрактное синтаксическое дерево) из токенов.
  */
 class Parser {
@@ -42,4 +42,4 @@ private:
     bool isAssignmentToken(const Token& token) const;
 };
 
-} // namespace shell
+}  // namespace shell

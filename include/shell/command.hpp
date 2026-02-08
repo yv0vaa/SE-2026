@@ -8,7 +8,7 @@ namespace shell {
 
 /**
  * @brief Базовый интерфейс для всех команд
- * 
+ *
  * Все команды (встроенные и внешние) реализуют этот интерфейс.
  */
 class Command {
@@ -22,11 +22,8 @@ public:
      * @param errorStream Поток для ошибок
      * @return Код возврата (0 — успех)
      */
-    virtual int execute(
-        std::istream& inputStream,
-        std::ostream& outputStream,
-        std::ostream& errorStream
-    ) = 0;
+    virtual int execute(std::istream& inputStream, std::ostream& outputStream,
+                        std::ostream& errorStream) = 0;
 
     /**
      * @brief Установить аргументы команды
@@ -41,4 +38,4 @@ public:
     virtual std::string getName() const = 0;
 };
 
-} // namespace shell
+}  // namespace shell

@@ -12,7 +12,7 @@ namespace shell {
 
 /**
  * @brief Фабрика команд
- * 
+ *
  * Создаёт объекты команд по имени. Для встроенных команд
  * создаёт соответствующие классы, для остальных — ExternalCommand.
  */
@@ -45,4 +45,4 @@ private:
     void registerBuiltins();
 };
 
-} // namespace shell
+}  // namespace shell

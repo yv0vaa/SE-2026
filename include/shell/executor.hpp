@@ -57,4 +57,4 @@ private:
     int executePipeline(Pipeline& pipeline);
 };
 
-} // namespace shell
+}  // namespace shell

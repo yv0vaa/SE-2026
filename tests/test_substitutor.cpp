@@ -8,7 +8,7 @@ using namespace shell;
 class SubstitutorTest : public ::testing::Test {
 protected:
     Environment env;
-    
+
     void SetUp() override {
         env.set("FOO", "bar");
         env.set("HOME", "/home/user");
