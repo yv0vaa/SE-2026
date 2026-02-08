@@ -48,6 +48,7 @@ Makefile
 # IDE and editor files
 .idea/
 .vscode/
+.cache/
 *.swp
 *.swo
 *~

@@ -696,7 +696,8 @@ TEST_F(LexerEdgeCasesTest, EmptyPipe) {
     // Должен найти два PIPE
     int pipeCount = 0;
     for (const auto& t : tokens) {
-        if (t.type == TokenType::PIPE) pipeCount++;
+        if (t.type == TokenType::PIPE)
+            pipeCount++;
     }
     EXPECT_EQ(pipeCount, 2);
 }
