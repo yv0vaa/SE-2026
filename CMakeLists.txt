@@ -30,24 +30,24 @@ endif()
 # =============================================================================
 
 set(SHELL_LIB_SOURCES
-    src/environment.cpp
-    src/token.cpp
-    src/lexer.cpp
-    src/substitutor.cpp
-    src/parsed_command.cpp
-    src/parser.cpp
-    src/input_reader.cpp
-    src/command_factory.cpp
-    src/pipeline.cpp
-    src/pipeline_builder.cpp
-    src/executor.cpp
-    src/shell.cpp
-    src/commands/echo_command.cpp
-    src/commands/cat_command.cpp
-    src/commands/wc_command.cpp
-    src/commands/pwd_command.cpp
-    src/commands/exit_command.cpp
-    src/commands/external_command.cpp
+    src/shell/environment.cpp
+    src/shell/token.cpp
+    src/shell/lexer.cpp
+    src/shell/substitutor.cpp
+    src/shell/parsed_command.cpp
+    src/shell/parser.cpp
+    src/shell/input_reader.cpp
+    src/shell/command_factory.cpp
+    src/shell/pipeline.cpp
+    src/shell/pipeline_builder.cpp
+    src/shell/executor.cpp
+    src/shell/shell.cpp
+    src/shell/commands/echo_command.cpp
+    src/shell/commands/cat_command.cpp
+    src/shell/commands/wc_command.cpp
+    src/shell/commands/pwd_command.cpp
+    src/shell/commands/exit_command.cpp
+    src/shell/commands/external_command.cpp
 )
 
 # Create a library for reuse in tests
@@ -65,7 +65,7 @@ target_compile_options(shell_lib PRIVATE
 )
 
 # Main executable
-add_executable(shell src/main.cpp)
+add_executable(shell src/shell/main.cpp)
 target_link_libraries(shell PRIVATE shell_lib)
 
 # Apply strict warnings only to our code
