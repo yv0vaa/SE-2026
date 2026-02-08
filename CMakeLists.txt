@@ -102,6 +102,7 @@ if(BUILD_TESTING)
         tests/test_commands.cpp
         tests/test_pipeline.cpp
         tests/test_integration.cpp
+        tests/test_edge_cases.cpp
     )
     target_link_libraries(shell_tests PRIVATE shell_lib GTest::gtest_main)
     
