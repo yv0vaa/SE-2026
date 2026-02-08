@@ -14,8 +14,14 @@ mkdir -p "$HOOKS_DIR"
 # Копируем pre-commit hook
 cp "$SCRIPT_DIR/pre-commit" "$HOOKS_DIR/pre-commit"
 chmod +x "$HOOKS_DIR/pre-commit"
+echo "✓ pre-commit hook установлен (clang-format + clang-tidy)"
 
-echo "✓ pre-commit hook установлен"
+# Копируем pre-push hook
+cp "$SCRIPT_DIR/pre-push" "$HOOKS_DIR/pre-push"
+chmod +x "$HOOKS_DIR/pre-push"
+echo "✓ pre-push hook установлен (полная сборка + тесты)"
+
 echo ""
-echo "Теперь перед каждым коммитом C++ файлы будут автоматически"
-echo "отформатированы с помощью clang-format."
+echo "Готово! Теперь:"
+echo "  • Перед коммитом: автоформатирование + clang-tidy"
+echo "  • Перед пушем: полная сборка + 70 тестов"
