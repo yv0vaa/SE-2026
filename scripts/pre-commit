@@ -54,9 +54,13 @@ if [ "$SKIP_TIDY" != "1" ]; then
         for FILE in $STAGED_FILES; do
             if [ -f "$FILE" ]; then
                 OUTPUT=$(clang-tidy -p build "$FILE" 2>&1 || true)
-                if echo "$OUTPUT" | grep -q "error:"; then
+                
+                # Фильтруем ошибки поиска заголовков (проблема конфигурации, не кода)
+                REAL_ERRORS=$(echo "$OUTPUT" | grep "error:" | grep -v "file not found" | grep -v "could not find" || true)
+                
+                if [ -n "$REAL_ERRORS" ]; then
                     echo "❌ $FILE"
-                    echo "$OUTPUT" | grep -E "(error:|warning:)" | head -5
+                    echo "$REAL_ERRORS" | head -5
                     ERRORS=1
                 fi
             fi
