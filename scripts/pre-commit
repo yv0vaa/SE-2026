@@ -1,6 +1,10 @@
 #!/bin/bash
-# Pre-commit hook для форматирования кода
+# Pre-commit hook для форматирования кода и запуска clang-tidy
 # Устанавливается командой: ./scripts/install-hooks.sh
+#
+# Переменные окружения:
+#   SKIP_FORMAT=1  - пропустить форматирование
+#   SKIP_TIDY=1    - пропустить clang-tidy
 
 set -e
 
@@ -11,27 +15,63 @@ if [ -z "$STAGED_FILES" ]; then
     exit 0
 fi
 
-# Проверяем наличие clang-format
-if ! command -v clang-format &> /dev/null; then
-    echo "⚠️  clang-format не найден. Пропускаем форматирование."
-    exit 0
+# ============== Форматирование ==============
+if [ "$SKIP_FORMAT" != "1" ]; then
+    if command -v clang-format &> /dev/null; then
+        FORMATTED=0
+        for FILE in $STAGED_FILES; do
+            if [ -f "$FILE" ]; then
+                clang-format -i "$FILE"
+                git add "$FILE"
+                FORMATTED=$((FORMATTED + 1))
+            fi
+        done
+        
+        if [ $FORMATTED -gt 0 ]; then
+            echo "✓ clang-format: отформатировано файлов: $FORMATTED"
+        fi
+    else
+        echo "⚠️  clang-format не найден, пропускаем форматирование"
+    fi
 fi
 
-# Форматируем каждый файл
-FORMATTED=0
-for FILE in $STAGED_FILES; do
-    if [ -f "$FILE" ]; then
-        # Форматируем файл
-        clang-format -i "$FILE"
+# ============== Clang-Tidy ==============
+if [ "$SKIP_TIDY" != "1" ]; then
+    if ! command -v clang-tidy &> /dev/null; then
+        echo "⚠️  clang-tidy не найден, пропускаем анализ"
+    else
+        # Проверяем наличие compile_commands.json
+        if [ ! -f "build/compile_commands.json" ]; then
+            echo "⚠️  build/compile_commands.json не найден, генерируем..."
+            cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON > /dev/null 2>&1 || {
+                echo "⚠️  Не удалось сгенерировать compile_commands.json, пропускаем clang-tidy"
+                exit 0
+            }
+        fi
         
-        # Добавляем обратно в индекс
-        git add "$FILE"
-        FORMATTED=$((FORMATTED + 1))
+        echo "🔍 Запуск clang-tidy..."
+        ERRORS=0
+        for FILE in $STAGED_FILES; do
+            if [ -f "$FILE" ]; then
+                OUTPUT=$(clang-tidy -p build "$FILE" 2>&1 || true)
+                if echo "$OUTPUT" | grep -q "error:"; then
+                    echo "❌ $FILE"
+                    echo "$OUTPUT" | grep -E "(error:|warning:)" | head -5
+                    ERRORS=1
+                fi
+            fi
+        done
+        
+        if [ $ERRORS -eq 1 ]; then
+            echo ""
+            echo "❌ clang-tidy обнаружил ошибки. Исправьте их перед коммитом."
+            echo "   Или закоммитьте с: git commit --no-verify"
+            echo "   Или пропустите tidy: SKIP_TIDY=1 git commit -m '...'"
+            exit 1
+        fi
+        
+        echo "✓ clang-tidy: ошибок не найдено"
     fi
-done
-
-if [ $FORMATTED -gt 0 ]; then
-    echo "✓ Отформатировано файлов: $FORMATTED"
 fi
 
 exit 0

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, hw02 ]
   pull_request:
     branches: [ main, master, develop ]
 
@@ -90,8 +90,39 @@ jobs:
           UBSAN_OPTIONS: print_stacktrace=1
         run: ctest --output-on-failure
 
+  clang-tidy:
+    name: Clang-Tidy Static Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential clang-tidy
+
+      - name: Configure CMake
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Run clang-tidy
+        run: |
+          # Собираем список исходных файлов
+          find src include -name "*.cpp" -o -name "*.hpp" | \
+            xargs clang-tidy -p build --warnings-as-errors='' 2>&1 | tee clang-tidy-output.txt
+          
+          # Проверяем на наличие ошибок (не warnings)
+          if grep -q "error:" clang-tidy-output.txt; then
+            echo "::error::clang-tidy found errors"
+            exit 1
+          fi
+
   code-quality:
-    name: Code Quality
+    name: Code Formatting
     runs-on: ubuntu-latest
     
     steps:
@@ -105,6 +136,14 @@ jobs:
 
       - name: Check code formatting
         run: |
-          find src include tests -name "*.cpp" -o -name "*.hpp" | \
-            xargs clang-format --dry-run --Werror || \
-            echo "::warning::Code formatting issues found. Run clang-format to fix."
+          RESULT=0
+          for file in $(find src include tests -name "*.cpp" -o -name "*.hpp"); do
+            if ! clang-format --dry-run --Werror "$file" 2>/dev/null; then
+              echo "::warning file=$file::Needs formatting"
+              RESULT=1
+            fi
+          done
+          if [ $RESULT -ne 0 ]; then
+            echo "::warning::Some files need formatting. Run: clang-format -i <file>"
+          fi
+          exit 0  # Не фейлим билд из-за форматирования
