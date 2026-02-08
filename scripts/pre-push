@@ -1,9 +1,11 @@
 #!/bin/bash
-# Pre-push hook - запускает полную проверку перед пушем
+# Pre-push hook - полная проверка перед пушем
 # Устанавливается командой: ./scripts/install-hooks.sh
 #
 # Переменные окружения:
-#   SKIP_CHECK=1  - пропустить проверку
+#   SKIP_CHECK=1  - пропустить всё
+#   SKIP_FORMAT=1 - пропустить форматирование
+#   SKIP_TIDY=1   - пропустить clang-tidy
 
 set -e
 
@@ -12,20 +14,104 @@ if [ "$SKIP_CHECK" = "1" ]; then
     exit 0
 fi
 
-# Определяем корень проекта (где .git)
 PROJECT_DIR="$(git rev-parse --show-toplevel)"
 
 echo "🔍 Запуск полной проверки перед пушем..."
 echo ""
 
-# Запускаем check.sh
-if "$PROJECT_DIR/scripts/check.sh"; then
-    echo ""
-    echo "✅ Проверка пройдена, пуш разрешён"
-    exit 0
+# ============== 1. Форматирование ==============
+if [ "$SKIP_FORMAT" != "1" ]; then
+    echo "[1/4] Проверка форматирования..."
+    if command -v clang-format &> /dev/null; then
+        NEEDS_FORMAT=0
+        for FILE in $(find "$PROJECT_DIR/src" "$PROJECT_DIR/include" "$PROJECT_DIR/tests" -name "*.cpp" -o -name "*.hpp" 2>/dev/null); do
+            if ! clang-format --dry-run --Werror "$FILE" 2>/dev/null; then
+                echo "  ⚠️  $FILE"
+                NEEDS_FORMAT=1
+            fi
+        done
+        
+        if [ $NEEDS_FORMAT -eq 1 ]; then
+            echo ""
+            echo "❌ Некоторые файлы требуют форматирования."
+            echo "   Запустите: find src include tests -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i"
+            echo "   Или пропустите: SKIP_FORMAT=1 git push"
+            exit 1
+        fi
+        echo "✓ Форматирование в порядке"
+    else
+        echo "⚠️  clang-format не найден, пропускаем"
+    fi
 else
+    echo "[1/4] Форматирование пропущено"
+fi
+
+# ============== 2. Clang-Tidy ==============
+if [ "$SKIP_TIDY" != "1" ]; then
+    echo "[2/4] Запуск clang-tidy..."
+    if command -v clang-tidy &> /dev/null; then
+        # Проверяем/создаём compile_commands.json
+        if [ ! -f "$PROJECT_DIR/build/compile_commands.json" ]; then
+            cmake -B "$PROJECT_DIR/build" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON "$PROJECT_DIR" > /dev/null 2>&1 || true
+        fi
+        
+        if [ -f "$PROJECT_DIR/build/compile_commands.json" ]; then
+            ERRORS=0
+            for FILE in $(find "$PROJECT_DIR/src" "$PROJECT_DIR/include" -name "*.cpp" 2>/dev/null); do
+                OUTPUT=$(clang-tidy -p "$PROJECT_DIR/build" "$FILE" 2>&1 || true)
+                REAL_ERRORS=$(echo "$OUTPUT" | grep "error:" | grep -v "file not found" | grep -v "could not find" || true)
+                if [ -n "$REAL_ERRORS" ]; then
+                    echo "  ❌ $FILE"
+                    echo "$REAL_ERRORS" | head -3 | sed 's/^/     /'
+                    ERRORS=1
+                fi
+            done
+            
+            if [ $ERRORS -eq 1 ]; then
+                echo ""
+                echo "❌ clang-tidy обнаружил ошибки"
+                echo "   Или пропустите: SKIP_TIDY=1 git push"
+                exit 1
+            fi
+            echo "✓ clang-tidy: ошибок не найдено"
+        else
+            echo "⚠️  compile_commands.json не найден, пропускаем clang-tidy"
+        fi
+    else
+        echo "⚠️  clang-tidy не найден, пропускаем"
+    fi
+else
+    echo "[2/4] clang-tidy пропущен"
+fi
+
+# ============== 3. Сборка ==============
+echo "[3/4] Сборка проекта..."
+BUILD_DIR="$PROJECT_DIR/build-check"
+rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR"
+
+cmake -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON "$PROJECT_DIR" > /dev/null 2>&1
+if ! cmake --build "$BUILD_DIR" --parallel 2>&1 | tail -5; then
     echo ""
-    echo "❌ Проверка не пройдена, пуш отменён"
-    echo "   Исправьте ошибки или пушьте с: git push --no-verify"
+    echo "❌ Ошибка сборки"
+    rm -rf "$BUILD_DIR"
     exit 1
 fi
+echo "✓ Сборка успешна"
+
+# ============== 4. Тесты ==============
+echo "[4/4] Запуск тестов..."
+cd "$BUILD_DIR"
+if ! ctest --output-on-failure 2>&1 | tail -10; then
+    echo ""
+    echo "❌ Тесты не прошли"
+    cd "$PROJECT_DIR"
+    rm -rf "$BUILD_DIR"
+    exit 1
+fi
+cd "$PROJECT_DIR"
+rm -rf "$BUILD_DIR"
+
+echo ""
+echo "✅ Все проверки пройдены! Пуш разрешён."
+exit 0

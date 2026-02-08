@@ -11,17 +11,19 @@ echo "Установка git hooks..."
 # Создаём директорию hooks если её нет
 mkdir -p "$HOOKS_DIR"
 
-# Копируем pre-commit hook
-cp "$SCRIPT_DIR/pre-commit" "$HOOKS_DIR/pre-commit"
-chmod +x "$HOOKS_DIR/pre-commit"
-echo "✓ pre-commit hook установлен (clang-format + clang-tidy)"
+# Удаляем старый pre-commit если есть
+rm -f "$HOOKS_DIR/pre-commit"
 
 # Копируем pre-push hook
 cp "$SCRIPT_DIR/pre-push" "$HOOKS_DIR/pre-push"
 chmod +x "$HOOKS_DIR/pre-push"
-echo "✓ pre-push hook установлен (полная сборка + тесты)"
+echo "✓ pre-push hook установлен"
 
 echo ""
-echo "Готово! Теперь:"
-echo "  • Перед коммитом: автоформатирование + clang-tidy"
-echo "  • Перед пушем: полная сборка + 70 тестов"
+echo "Готово! Перед каждым пушем будет выполняться:"
+echo "  1. Проверка форматирования (clang-format)"
+echo "  2. Статический анализ (clang-tidy)"
+echo "  3. Сборка проекта"
+echo "  4. Запуск тестов (70 тестов)"
+echo ""
+echo "Для пропуска проверки: git push --no-verify"
