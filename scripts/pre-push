@@ -21,24 +21,27 @@ echo ""
 
 # ============== 1. Форматирование ==============
 if [ "$SKIP_FORMAT" != "1" ]; then
-    echo "[1/4] Проверка форматирования..."
+    echo "[1/4] Проверка и автоформатирование..."
     if command -v clang-format &> /dev/null; then
-        NEEDS_FORMAT=0
+        FORMATTED=0
         for FILE in $(find "$PROJECT_DIR/src" "$PROJECT_DIR/include" "$PROJECT_DIR/tests" -name "*.cpp" -o -name "*.hpp" 2>/dev/null); do
             if ! clang-format --dry-run --Werror "$FILE" 2>/dev/null; then
-                echo "  ⚠️  $FILE"
-                NEEDS_FORMAT=1
+                clang-format -i "$FILE"
+                echo "  ✓ Отформатирован: $(basename "$FILE")"
+                FORMATTED=1
             fi
         done
         
-        if [ $NEEDS_FORMAT -eq 1 ]; then
+        if [ $FORMATTED -eq 1 ]; then
             echo ""
-            echo "❌ Некоторые файлы требуют форматирования."
-            echo "   Запустите: find src include tests -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i"
-            echo "   Или пропустите: SKIP_FORMAT=1 git push"
-            exit 1
+            echo "📝 Файлы были автоматически отформатированы."
+            echo "   Создаём коммит с исправлениями..."
+            git add -A
+            git commit -m "style: auto-format code" --no-verify
+            echo "✓ Коммит создан"
+        else
+            echo "✓ Форматирование в порядке"
         fi
-        echo "✓ Форматирование в порядке"
     else
         echo "⚠️  clang-format не найден, пропускаем"
     fi
