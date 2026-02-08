@@ -1,0 +1,37 @@
+#!/bin/bash
+# Pre-commit hook для форматирования кода
+# Устанавливается командой: ./scripts/install-hooks.sh
+
+set -e
+
+# Получаем список staged файлов C++
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(cpp|hpp|h|cc|cxx)$' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+# Проверяем наличие clang-format
+if ! command -v clang-format &> /dev/null; then
+    echo "⚠️  clang-format не найден. Пропускаем форматирование."
+    exit 0
+fi
+
+# Форматируем каждый файл
+FORMATTED=0
+for FILE in $STAGED_FILES; do
+    if [ -f "$FILE" ]; then
+        # Форматируем файл
+        clang-format -i "$FILE"
+        
+        # Добавляем обратно в индекс
+        git add "$FILE"
+        FORMATTED=$((FORMATTED + 1))
+    fi
+done
+
+if [ $FORMATTED -gt 0 ]; then
+    echo "✓ Отформатировано файлов: $FORMATTED"
+fi
+
+exit 0
