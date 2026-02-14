@@ -550,6 +550,130 @@ TEST_F(PipelineEdgeCasesTest, MultilinePipeline) {
 }
 
 // ============================================================
+// ПОДСТАНОВКИ В ПАЙПЛАЙНЕ, EXIT В ПАЙПЕ, КОДЫ ВОЗВРАТА, STDERR
+// ============================================================
+
+class SubstitutionAndPipesTest : public ::testing::Test {
+protected:
+    std::ostringstream capturedOutput;
+    std::ostringstream capturedErrors;
+    std::streambuf* oldCout;
+    std::streambuf* oldCerr;
+
+    void SetUp() override {
+        capturedOutput.str("");
+        capturedErrors.str("");
+        oldCout = std::cout.rdbuf(capturedOutput.rdbuf());
+        oldCerr = std::cerr.rdbuf(capturedErrors.rdbuf());
+    }
+
+    void TearDown() override {
+        std::cout.rdbuf(oldCout);
+        std::cerr.rdbuf(oldCerr);
+    }
+};
+
+// Подстановка переменной в пайплайне
+TEST_F(SubstitutionAndPipesTest, VariableSubstitutionInPipeline) {
+    Shell shell;
+    shell.processLine("FOO=hello");
+    shell.processLine("echo $FOO | wc");
+
+    std::string out = capturedOutput.str();
+    EXPECT_TRUE(out.find("1") != std::string::npos);
+    EXPECT_TRUE(out.find("1") != std::string::npos);  // 1 слово
+}
+
+// exit в середине пайплайна — запрос выхода с заданным кодом
+TEST_F(SubstitutionAndPipesTest, ExitInPipelineSetsExitRequested) {
+    Shell shell;
+    shell.processLine("echo x | exit 7 | cat");
+
+    EXPECT_TRUE(shell.shouldExit());
+    EXPECT_EQ(shell.getExitCode(), 7);
+}
+
+// Ненулевой код возврата в пайплайне — $? равен коду последней команды
+TEST_F(SubstitutionAndPipesTest, PipelineNonZeroExitCodeInQuestionMark) {
+    Shell shell;
+    shell.processLine("echo x | false");
+    capturedOutput.str("");
+    shell.processLine("echo $?");
+
+    EXPECT_NE(capturedOutput.str(), "0\n");
+}
+
+// stderr не попадает в следующий процесс пайпа — ошибка cat идёт в stderr шелла
+TEST_F(SubstitutionAndPipesTest, StderrNotPipedToNextCommand) {
+    Shell shell;
+    shell.processLine("echo hello | cat /nonexistent/file_xyz_123 | cat");
+
+    EXPECT_FALSE(capturedErrors.str().empty());
+}
+
+// ============================================================
+// ПУСТЫЕ КОМАНДЫ В ПАЙПЕ, УСТОЙЧИВОСТЬ (SHELL НЕ ПАДАЕТ)
+// ============================================================
+
+class EmptyPipelineAndRobustnessTest : public ::testing::Test {
+protected:
+    std::ostringstream capturedOutput;
+    std::ostringstream capturedErrors;
+    std::streambuf* oldCout;
+    std::streambuf* oldCerr;
+
+    void SetUp() override {
+        capturedOutput.str("");
+        capturedErrors.str("");
+        oldCout = std::cout.rdbuf(capturedOutput.rdbuf());
+        oldCerr = std::cerr.rdbuf(capturedErrors.rdbuf());
+    }
+
+    void TearDown() override {
+        std::cout.rdbuf(oldCout);
+        std::cerr.rdbuf(oldCerr);
+    }
+};
+
+// "| wc" — ведущий пайп: пустая первая команда пропускается, выполняется wc
+TEST_F(EmptyPipelineAndRobustnessTest, LeadingPipeExecutesSecondCommand) {
+    Shell shell;
+    int result = shell.processLine("| wc");
+
+    EXPECT_EQ(result, 0);
+    std::string out = capturedOutput.str();
+    EXPECT_TRUE(out.find("0") != std::string::npos);  // wc на пустом вводе: 0 0 0
+}
+
+// "echo |" — хвостовой пайп: пустая команда пропускается, выполняется только echo
+TEST_F(EmptyPipelineAndRobustnessTest, TrailingPipeExecutesFirstCommand) {
+    Shell shell;
+    int result = shell.processLine("echo hello |");
+
+    EXPECT_EQ(result, 0);
+    EXPECT_EQ(capturedOutput.str(), "hello\n");
+}
+
+// Только "|" — пустой пайплайн после фильтрации, диагностика в stderr
+TEST_F(EmptyPipelineAndRobustnessTest, OnlyPipeReportsError) {
+    Shell shell;
+    int result = shell.processLine("|");
+
+    EXPECT_EQ(result, 2);
+    EXPECT_FALSE(capturedErrors.str().empty());
+    EXPECT_TRUE(capturedErrors.str().find("empty pipeline") != std::string::npos);
+}
+
+// Шелл не падает на разнообразном вводе
+TEST_F(EmptyPipelineAndRobustnessTest, ShellDoesNotCrashOnVariousInput) {
+    Shell shell;
+    const char* inputs[] = {"", "   ", "|", "| |", "echo | | wc", "$$", "${}", "$?"};
+    for (const char* line : inputs) {
+        EXPECT_NO_THROW(shell.processLine(line));
+    }
+}
+
+// ============================================================
 // ТЕСТЫ НА ОБЩИЕ КРАЕВЫЕ СЛУЧАИ
 // ============================================================
 

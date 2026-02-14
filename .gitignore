@@ -78,3 +78,6 @@ compile_commands.json
 *.tmp
 *.temp
 *.log
+
+# AI / agent instructions (project-specific, not versioned)
+AGENTS.md

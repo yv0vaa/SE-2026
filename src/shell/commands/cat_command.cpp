@@ -5,7 +5,6 @@
 namespace shell {
 
 int CatCommand::execute(std::istream& in, std::ostream& out, std::ostream& err) {
-    // Если аргументов нет — копируем stdin в stdout
     if (filenames_.empty()) {
         out << in.rdbuf();
         return 0;

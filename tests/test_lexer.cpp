@@ -4,8 +4,14 @@
 
 using namespace shell;
 
+/**
+ * Юнит-тесты для Lexer.
+ * Проверяют: токенизация строки — слова, кавычки, pipe, пробелы, пустой ввод.
+ * Вход: строка. Выход: vector<Token>.
+ */
 class LexerTest : public ::testing::Test {};
 
+// Проверяет: пустая строка → один токен END_OF_INPUT. Вход: "". Выход: [END_OF_INPUT].
 TEST_F(LexerTest, EmptyInput) {
     Lexer lexer("");
     auto tokens = lexer.tokenize();
@@ -14,6 +20,7 @@ TEST_F(LexerTest, EmptyInput) {
     EXPECT_EQ(tokens[0].type, TokenType::END_OF_INPUT);
 }
 
+// Проверяет: одно слово → WORD + END_OF_INPUT. Вход: "echo". Выход: [WORD("echo"), END_OF_INPUT].
 TEST_F(LexerTest, SingleWord) {
     Lexer lexer("echo");
     auto tokens = lexer.tokenize();

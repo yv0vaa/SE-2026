@@ -42,6 +42,20 @@ public:
         return environment_;
     }
 
+    /**
+     * @brief Проверить, запрошен ли выход (для тестов)
+     */
+    bool shouldExit() const {
+        return executor_.shouldExit();
+    }
+
+    /**
+     * @brief Получить код выхода при запросе exit (для тестов)
+     */
+    int getExitCode() const {
+        return executor_.getExitCode();
+    }
+
 private:
     Environment environment_;
     InputReader inputReader_;
