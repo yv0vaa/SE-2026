@@ -53,7 +53,8 @@ TEST_F(CommandsTest, ExitGetName) {
 }
 
 // ============== Echo Tests ==============
-// Вход: аргументы через setArguments, пустой input. Выход: код 0, stdout — аргументы через пробел + \n.
+// Вход: аргументы через setArguments, пустой input. Выход: код 0, stdout — аргументы через пробел +
+// \n.
 
 TEST_F(CommandsTest, EchoNoArgs) {
     EchoCommand cmd;
@@ -109,7 +110,8 @@ TEST_F(CommandsTest, CatFileNotFound) {
 }
 
 TEST_F(CommandsTest, CatExistingFile) {
-    // Проверяет: cat с путём к существующему файлу выводит его содержимое. Вход: args=[filename], in=игнор. Выход: 0, out=содержимое.
+    // Проверяет: cat с путём к существующему файлу выводит его содержимое. Вход: args=[filename],
+    // in=игнор. Выход: 0, out=содержимое.
     const std::string filename = "/tmp/test_cat_file.txt";
     {
         std::ofstream f(filename);
@@ -127,7 +129,8 @@ TEST_F(CommandsTest, CatExistingFile) {
     std::remove(filename.c_str());
 }
 
-// Проверяет: cat .gitignore выводит содержимое файла (критерий ДЗ). Вход: args=["../.gitignore"] если файл есть. Выход: 0, out=содержимое.
+// Проверяет: cat .gitignore выводит содержимое файла (критерий ДЗ). Вход: args=["../.gitignore"]
+// если файл есть. Выход: 0, out=содержимое.
 TEST_F(CommandsTest, CatGitignore) {
     const std::string path = "../.gitignore";
     std::ifstream check(path);
@@ -179,7 +182,8 @@ TEST_F(CommandsTest, WcEmpty) {
     EXPECT_EQ(output.str(), "0 0 0\n");
 }
 
-// Проверяет: wc с аргументом-файлом возвращает строки/слова/байты файла. Вход: args=[path]. Выход: 0, строка "L W B\n".
+// Проверяет: wc с аргументом-файлом возвращает строки/слова/байты файла. Вход: args=[path]. Выход:
+// 0, строка "L W B\n".
 TEST_F(CommandsTest, WcExistingFile) {
     const std::string filename = "/tmp/test_wc_file.txt";
     {
@@ -196,7 +200,8 @@ TEST_F(CommandsTest, WcExistingFile) {
     std::remove(filename.c_str());
 }
 
-// Проверяет: wc .gitignore (критерий ДЗ). Вход: args=["../.gitignore"] если файл есть. Выход: 0, строка с числами.
+// Проверяет: wc .gitignore (критерий ДЗ). Вход: args=["../.gitignore"] если файл есть. Выход: 0,
+// строка с числами.
 TEST_F(CommandsTest, WcGitignore) {
     const std::string path = "../.gitignore";
     std::ifstream check(path);

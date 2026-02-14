@@ -1,4 +1,5 @@
 #include <algorithm>
+
 #include <gtest/gtest.h>
 
 #include "shell/environment.hpp"
@@ -93,7 +94,8 @@ TEST_F(EnvironmentTest, ToEnvpEmpty) {
 }
 
 // Проверяет: initFromSystem не падает и после него окружение не пустое или содержит "?".
-// Вход: initFromSystem(). Выход: не бросает; toEnvp() не пустой ИЛИ get("?") доступен (зависит от реализации).
+// Вход: initFromSystem(). Выход: не бросает; toEnvp() не пустой ИЛИ get("?") доступен (зависит от
+// реализации).
 TEST_F(EnvironmentTest, InitFromSystemNoThrow) {
     Environment sysEnv;
     EXPECT_NO_THROW(sysEnv.initFromSystem());

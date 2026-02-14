@@ -68,8 +68,9 @@ TEST_F(InputReaderTest, ReadLineMultipleLines) {
     EXPECT_EQ(*c, "c");
 }
 
-// Проверяет: setPrompt меняет приглашение (проверяем через то, что readLine не падает и возвращает данные).
-// Вход: setPrompt("$$ "), поток "x\n". Выход: readLine() == "x" (приглашение уходит в cout, здесь не перехватываем).
+// Проверяет: setPrompt меняет приглашение (проверяем через то, что readLine не падает и возвращает
+// данные). Вход: setPrompt("$$ "), поток "x\n". Выход: readLine() == "x" (приглашение уходит в
+// cout, здесь не перехватываем).
 TEST_F(InputReaderTest, SetPromptThenReadLine) {
     std::istringstream in("x\n");
     InputReader reader(in);
@@ -81,8 +82,8 @@ TEST_F(InputReaderTest, SetPromptThenReadLine) {
     EXPECT_EQ(*line, "x");
 }
 
-// Проверяет: showPrompt(false) — при readLine приглашение не выводится (тест не проверяет cout, только что readLine работает).
-// Вход: showPrompt(false), "test\n". Выход: readLine() == "test".
+// Проверяет: showPrompt(false) — при readLine приглашение не выводится (тест не проверяет cout,
+// только что readLine работает). Вход: showPrompt(false), "test\n". Выход: readLine() == "test".
 TEST_F(InputReaderTest, ShowPromptFalseReadLineStillWorks) {
     std::istringstream in("test\n");
     InputReader reader(in);

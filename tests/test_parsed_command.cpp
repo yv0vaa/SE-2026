@@ -67,7 +67,8 @@ TEST_F(ParsedCommandTest, ParsedSimpleCommandDefault) {
 // --- ParsedPipeline ---
 
 // Проверяет: addCommand и isPipeline.
-// Вход: addCommand(ParsedSimpleCommand("echo", {"x"})). Выход: commands.size()==1, commandName=="echo".
+// Вход: addCommand(ParsedSimpleCommand("echo", {"x"})). Выход: commands.size()==1,
+// commandName=="echo".
 TEST_F(ParsedCommandTest, ParsedPipelineAddCommand) {
     ParsedPipeline pipeline;
     EXPECT_TRUE(pipeline.commands.empty());

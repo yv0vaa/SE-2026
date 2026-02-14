@@ -33,8 +33,10 @@ protected:
     }
 
     void TearDown() override {
-        if (oldCout) std::cout.rdbuf(oldCout);
-        if (oldCerr) std::cerr.rdbuf(oldCerr);
+        if (oldCout)
+            std::cout.rdbuf(oldCout);
+        if (oldCerr)
+            std::cerr.rdbuf(oldCerr);
     }
 };
 
