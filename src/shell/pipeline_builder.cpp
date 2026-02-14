@@ -8,6 +8,10 @@ Pipeline PipelineBuilder::build(const ParsedPipeline& parsed) {
     Pipeline pipeline;
 
     for (const auto& parsedCmd : parsed.commands) {
+        // Пропускаем пустые имена команд (например, "| wc" или "echo |")
+        if (parsedCmd.commandName.empty()) {
+            continue;
+        }
         auto command = factory_.create(parsedCmd.commandName);
         command->setArguments(parsedCmd.arguments);
         pipeline.addCommand(std::move(command));
