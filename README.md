@@ -182,6 +182,8 @@ ctest --output-on-failure
 ./shell_tests
 ```
 
+План тестирования, описание покрытия по компонентам и соглашения (вход/выход для тестов) описаны в [docs/TESTING.md](docs/TESTING.md).
+
 ## Стиль кодирования
 
 Проект следует [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) с некоторыми исключениями:
@@ -202,7 +204,9 @@ find src include tests -name "*.cpp" -o -name "*.hpp" | xargs clang-format -i
 
 ## Авторы
 
-- Команда SE-2026
+- [Захаров Владимир](https://github.com/yv0vaa)
+- [Никоненко Егор](https://github.com/animeemorave)
+- [Шатохин Лев](https://github.com/TrueKotenka)
 
 ## Как помочь проекту
 

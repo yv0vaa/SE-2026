@@ -5,8 +5,14 @@
 
 using namespace shell;
 
+/**
+ * Юнит-тесты для Parser.
+ * Проверяют: разбор токенов в AST — пустая строка, простая команда, пайплайн, присваивание.
+ * Вход: vector<Token>. Выход: unique_ptr<ParsedCommand>.
+ */
 class ParserTest : public ::testing::Test {};
 
+// Проверяет: пустой ввод → ParsedEmpty. Вход: токены от "". Выход: result->isEmpty().
 TEST_F(ParserTest, EmptyInput) {
     Lexer lexer("");
     auto tokens = lexer.tokenize();

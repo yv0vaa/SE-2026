@@ -5,6 +5,11 @@
 
 using namespace shell;
 
+/**
+ * Юнит-тесты для Substitutor.
+ * Проверяют: подстановка $VAR и ${VAR} до токенизации; в одинарных кавычках не подставляется.
+ * Вход: строка + Environment. Выход: строка с подставленными значениями.
+ */
 class SubstitutorTest : public ::testing::Test {
 protected:
     Environment env;

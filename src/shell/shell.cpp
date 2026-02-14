@@ -17,7 +17,6 @@ int Shell::run() {
         auto line = inputReader_.readLine();
 
         if (!line) {
-            // EOF
             break;
         }
 
