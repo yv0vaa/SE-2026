@@ -30,7 +30,7 @@
 *.exe
 *.out
 *.app
-shell
+/shell
 
 # Build directories
 build/
@@ -48,6 +48,7 @@ Makefile
 # IDE and editor files
 .idea/
 .vscode/
+.cache/
 *.swp
 *.swo
 *~

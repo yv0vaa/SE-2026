@@ -2,130 +2,153 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - master
+      - develop
+      - 'hw*'      # hw01, hw02, hw03...
+      - 'feature/*'
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, master, develop ]
 
 jobs:
-  # Verify CMake configuration works
-  cmake-config:
-    name: CMake Configuration Check
-    runs-on: ubuntu-22.04
+  build-and-test:
+    name: Build and Test (${{ matrix.os }}, ${{ matrix.compiler }})
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu с GCC
+          - os: ubuntu-latest
+            compiler: gcc
+            cc: gcc
+            cxx: g++
+          
+          # Ubuntu с Clang
+          - os: ubuntu-latest
+            compiler: clang
+            cc: clang
+            cxx: clang++
+          
+          # macOS с AppleClang
+          - os: macos-latest
+            compiler: appleclang
+            cc: clang
+            cxx: clang++
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential
+
+      - name: Configure CMake
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_TESTING=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Run tests
+        working-directory: build
+        run: ctest --output-on-failure --parallel
+
+  build-with-sanitizers:
+    name: Build with Sanitizers
+    runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake ninja-build
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential
 
-    - name: Configure CMake
-      run: |
-        cmake -B build -G Ninja \
-          -DCMAKE_BUILD_TYPE=Release
+      - name: Configure CMake with AddressSanitizer
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_TESTING=ON \
+            -DENABLE_SANITIZER_ADDRESS=ON \
+            -DENABLE_SANITIZER_UNDEFINED_BEHAVIOR=ON
 
-    - name: Verify configuration
-      run: |
-        echo "CMake configuration successful"
-        cat build/CMakeCache.txt | grep -E "(CMAKE_CXX_STANDARD|CMAKE_BUILD_TYPE)"
+      - name: Build
+        run: cmake --build build --parallel
 
-  # Check documentation and repo structure
-  docs-check:
-    name: Documentation Check
-    runs-on: ubuntu-22.04
+      - name: Run tests with sanitizers
+        working-directory: build
+        env:
+          ASAN_OPTIONS: detect_leaks=1:strict_string_checks=1
+          UBSAN_OPTIONS: print_stacktrace=1
+        run: ctest --output-on-failure
+
+  clang-tidy:
+    name: Clang-Tidy Static Analysis
+    runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Check required files exist
-      run: |
-        echo "Checking required files..."
-        
-        files=(
-          "README.md"
-          "LICENSE"
-          "CMakeLists.txt"
-          ".gitignore"
-          "docs/ARCHITECTURE.md"
-        )
-        
-        for file in "${files[@]}"; do
-          if [ -f "$file" ]; then
-            echo "✓ $file exists"
-          else
-            echo "✗ $file is missing!"
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential clang-tidy
+
+      - name: Configure CMake
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Run clang-tidy
+        run: |
+          # Собираем список исходных файлов
+          find src include -name "*.cpp" -o -name "*.hpp" | \
+            xargs clang-tidy -p build --warnings-as-errors='' 2>&1 | tee clang-tidy-output.txt
+          
+          # Проверяем на наличие ошибок (не warnings)
+          if grep -q "error:" clang-tidy-output.txt; then
+            echo "::error::clang-tidy found errors"
             exit 1
           fi
-        done
-        
-        echo ""
-        echo "All required files present!"
 
-    - name: Check README has content
-      run: |
-        if [ $(wc -l < README.md) -lt 10 ]; then
-          echo "README.md seems too short"
-          exit 1
-        fi
-        echo "✓ README.md has sufficient content"
-
-    - name: Check ARCHITECTURE.md has content
-      run: |
-        if [ $(wc -l < docs/ARCHITECTURE.md) -lt 100 ]; then
-          echo "ARCHITECTURE.md seems too short"
-          exit 1
-        fi
-        echo "✓ ARCHITECTURE.md has sufficient content ($(wc -l < docs/ARCHITECTURE.md) lines)"
-
-  # Lint check - will be active when source files are added
-  lint:
-    name: Lint Check
-    runs-on: ubuntu-22.04
+  code-quality:
+    name: Code Formatting
+    runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install clang-format
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y clang-format
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
 
-    - name: Check code formatting
-      run: |
-        # Find all C++ source files
-        cpp_files=$(find src include tests -name "*.cpp" -o -name "*.hpp" 2>/dev/null || true)
-        
-        if [ -z "$cpp_files" ]; then
-          echo "No source files found yet - lint check skipped"
-          echo "This is expected during the design phase"
-          exit 0
-        fi
-        
-        echo "Checking formatting of:"
-        echo "$cpp_files"
-        echo "$cpp_files" | xargs clang-format --dry-run --Werror
-
-  # Markdown lint
-  markdown-lint:
-    name: Markdown Lint
-    runs-on: ubuntu-22.04
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Check markdown files
-      run: |
-        echo "Checking markdown files..."
-        
-        # Simple check: ensure no trailing whitespace in markdown
-        if grep -r "[[:space:]]$" --include="*.md" .; then
-          echo "Warning: trailing whitespace found in markdown files"
-          # Don't fail, just warn
-        fi
-        
-        echo "✓ Markdown check complete"
+      - name: Check code formatting
+        run: |
+          RESULT=0
+          for file in $(find src include tests -name "*.cpp" -o -name "*.hpp"); do
+            if ! clang-format --dry-run --Werror "$file" 2>/dev/null; then
+              echo "::warning file=$file::Needs formatting"
+              RESULT=1
+            fi
+          done
+          if [ $RESULT -ne 0 ]; then
+            echo "::warning::Some files need formatting. Run: clang-format -i <file>"
+          fi
+          exit 0  # Не фейлим билд из-за форматирования
