@@ -96,11 +96,16 @@ if(BUILD_TESTING)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_BACKUP}")
     
     add_executable(shell_tests
+        tests/test_token.cpp
+        tests/test_environment.cpp
+        tests/test_input_reader.cpp
         tests/test_lexer.cpp
         tests/test_parser.cpp
         tests/test_substitutor.cpp
+        tests/test_parsed_command.cpp
         tests/test_commands.cpp
         tests/test_pipeline.cpp
+        tests/test_executor.cpp
         tests/test_integration.cpp
         tests/test_edge_cases.cpp
     )

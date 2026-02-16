@@ -1,5 +1,7 @@
 # Архитектурная документация интерпретатора командной оболочки
 
+Документ описывает архитектуру и реализованное поведение CLI Shell Interpreter. Все перечисленные ниже компоненты и сценарии **реализованы в коде** и покрыты юнит- и интеграционными тестами. Соответствие кода и документации поддерживается при изменениях в репозитории.
+
 ## Содержание
 
 1. [Обзор системы](#1-обзор-системы)
@@ -736,6 +738,13 @@ private:
 
 Для данного проекта **рекомендуется Вариант 1** ввиду его простоты. Системные pipe потребовались бы для полноценной поддержки внешних команд с большими объёмами данных.
 
+### 8.7 Пустые команды в пайпе и обработка ошибок
+
+- **Пустые имена команд**: при разборе строк вида `| wc` или `echo |` парсер может выдать команды с пустым именем. PipelineBuilder **пропускает** такие команды. В результате `| wc` выполняется как одиночная команда `wc` с пустым stdin.
+- **Полностью пустой пайплайн**: если после фильтрации не осталось ни одной команды (например, ввод `|`), Executor не вызывается; в stderr выводится диагностика «empty pipeline», в `$?` устанавливается 2, процесс не завершается.
+- **exit в пайпе**: если в пайплайне выполняется команда `exit [n]`, она устанавливает флаг завершения и код выхода; выполнение пайплайна прерывается (оставшиеся команды не запускаются), REPL завершает цикл с указанным кодом.
+- **Поток stderr**: каждая команда в пайпе получает один и тот же stderr (например, stderr шелла). Вывод ошибок **не** передаётся по конвейеру следующей команде; только stdout передаётся.
+
 ---
 
 ## 9. Управление окружением
@@ -834,8 +843,6 @@ echo hello | cat | wc
 ```mermaid
 classDiagram
     direction TB
-    
-    %% Core classes
     class Shell {
         -InputReader inputReader
         -Substitutor substitutor
@@ -847,41 +854,34 @@ classDiagram
         +run() int
         -processLine(line) int
     }
-    
     class Environment {
-        -map~string, string~ variables
+        -map variables
         +get(name) string
         +set(name, value) void
         +unset(name) void
         +contains(name) bool
-        +toEnvp() vector~string~
+        +toEnvp() vector
         +initFromSystem() void
     }
-    
-    %% Parsing classes
     class InputReader {
-        +readLine() optional~string~
+        +readLine() optional
     }
-    
     class Substitutor {
-        -Environment& env
+        -Environment env
         +substitute(input) string
         -expandVariable(name) string
     }
-    
     class Lexer {
         -string input
         -size_t position
-        +tokenize() vector~Token~
+        +tokenize() vector
         -readWord() Token
         -readQuotedString(quote) Token
     }
-    
     class Token {
         +TokenType type
         +string value
     }
-    
     class TokenType {
         <<enumeration>>
         WORD
@@ -889,65 +889,53 @@ classDiagram
         ASSIGNMENT
         END_OF_INPUT
     }
-    
     class Parser {
-        -vector~Token~ tokens
+        -vector tokens
         -size_t position
-        +parse() ParsedCommand*
+        +parse() ParsedCommand
         -parseSimpleCommand() ParsedSimpleCommand
         -parsePipeline() ParsedPipeline
         -parseAssignment() ParsedAssignment
     }
-    
     class ParsedCommand {
         <<abstract>>
-        +isAssignment()* bool
-        +isPipeline()* bool
+        +isAssignment() bool
+        +isPipeline() bool
     }
-    
     class ParsedAssignment {
         +string variableName
         +string value
         +isAssignment() bool
     }
-    
     class ParsedSimpleCommand {
         +string commandName
-        +vector~string~ arguments
+        +vector arguments
     }
-    
     class ParsedPipeline {
-        +vector~ParsedSimpleCommand~ commands
+        +vector commands
         +isPipeline() bool
     }
-    
-    %% Command classes
     class Command {
         <<abstract>>
-        +execute(in, out, err)* int
-        +setArguments(args)* void
-        +getName()* string
+        +execute(in, out, err) int
+        +setArguments(args) void
+        +getName() string
     }
-    
     class EchoCommand {
-        -vector~string~ args
+        -vector args
         +execute(in, out, err) int
     }
-    
     class CatCommand {
-        -vector~string~ filenames
+        -vector filenames
         +execute(in, out, err) int
     }
-    
     class WcCommand {
-        -vector~string~ filenames
+        -vector filenames
         +execute(in, out, err) int
     }
-    
     class PwdCommand {
         +execute(in, out, err) int
     }
-    
     class ExitCommand {
         -bool exitRequested
         -int exitCode
@@ -955,38 +943,32 @@ classDiagram
         +wasExitRequested() bool
         +getExitCode() int
     }
-    
     class ExternalCommand {
         -string programPath
-        -vector~string~ args
-        -Environment& env
+        -vector args
+        -Environment env
         +execute(in, out, err) int
-        -findExecutable() optional~string~
+        -findExecutable() optional
     }
-    
     class CommandFactory {
-        -Environment& env
+        -Environment env
         -map builtinFactories
-        +create(name) unique_ptr~Command~
+        +create(name) Command
         -registerBuiltins() void
     }
-    
-    %% Execution classes
     class Pipeline {
-        -vector~unique_ptr~Command~~ commands
+        -vector commands
         +addCommand(cmd) void
         +size() size_t
-        +getCommand(index) Command&
+        +getCommand(index) Command
         +isEmpty() bool
     }
-    
     class PipelineBuilder {
-        -CommandFactory& factory
+        -CommandFactory factory
         +build(parsed) Pipeline
     }
-    
     class Executor {
-        -Environment& env
+        -Environment env
         -bool exitRequested
         -int exitCode
         +execute(pipeline) int
@@ -996,8 +978,6 @@ classDiagram
         -executeSingleCommand(cmd) int
         -executePipeline(pipeline) int
     }
-    
-    %% Relationships
     Shell --> InputReader
     Shell --> Substitutor
     Shell --> Lexer
@@ -1005,27 +985,22 @@ classDiagram
     Shell --> PipelineBuilder
     Shell --> Executor
     Shell --> Environment
-    
     Substitutor --> Environment
     Lexer --> Token
     Token --> TokenType
     Parser --> ParsedCommand
-    
     ParsedCommand <|-- ParsedAssignment
     ParsedCommand <|-- ParsedPipeline
     ParsedPipeline --> ParsedSimpleCommand
-    
     Command <|-- EchoCommand
     Command <|-- CatCommand
     Command <|-- WcCommand
     Command <|-- PwdCommand
     Command <|-- ExitCommand
     Command <|-- ExternalCommand
-    
     CommandFactory --> Command
     CommandFactory --> Environment
     ExternalCommand --> Environment
-    
     PipelineBuilder --> CommandFactory
     PipelineBuilder --> Pipeline
     Pipeline --> Command
@@ -1051,59 +1026,48 @@ sequenceDiagram
 
     User->>Shell: запуск
     activate Shell
-    
     loop REPL
         Shell->>InputReader: readLine()
         activate InputReader
-        InputReader->>User: prompt "> "
-        User->>InputReader: "echo $HOME | wc"
-        InputReader-->>Shell: "echo $HOME | wc"
+        InputReader->>User: prompt
+        User->>InputReader: echo $HOME pipe wc
+        InputReader-->>Shell: echo $HOME pipe wc
         deactivate InputReader
-        
-        Shell->>Substitutor: substitute("echo $HOME | wc")
+        Shell->>Substitutor: substitute
         activate Substitutor
-        Substitutor->>Environment: get("HOME")
-        Environment-->>Substitutor: "/home/user"
-        Substitutor-->>Shell: "echo /home/user | wc"
+        Substitutor->>Environment: get HOME
+        Environment-->>Substitutor: /home/user
+        Substitutor-->>Shell: echo /home/user pipe wc
         deactivate Substitutor
-        
-        Shell->>Lexer: tokenize("echo /home/user | wc")
+        Shell->>Lexer: tokenize
         activate Lexer
-        Lexer-->>Shell: [WORD, WORD, PIPE, WORD]
+        Lexer-->>Shell: WORD WORD PIPE WORD
         deactivate Lexer
-        
-        Shell->>Parser: parse(tokens)
+        Shell->>Parser: parse
         activate Parser
         Parser-->>Shell: ParsedPipeline
         deactivate Parser
-        
-        Shell->>PipelineBuilder: build(parsedPipeline)
+        Shell->>PipelineBuilder: build
         activate PipelineBuilder
-        PipelineBuilder->>CommandFactory: create("echo")
+        PipelineBuilder->>CommandFactory: create echo
         CommandFactory-->>PipelineBuilder: EchoCommand
-        PipelineBuilder->>CommandFactory: create("wc")
+        PipelineBuilder->>CommandFactory: create wc
         CommandFactory-->>PipelineBuilder: WcCommand
         PipelineBuilder-->>Shell: Pipeline
         deactivate PipelineBuilder
-        
-        Shell->>Executor: execute(pipeline)
+        Shell->>Executor: execute
         activate Executor
-        
-        Note over Executor,Command: echo записывает "/home/user\n" в buffer
-        Executor->>Command: execute(stdin, buffer, stderr)
+        Note over Executor,Command: echo в buffer
+        Executor->>Command: execute
         Command-->>Executor: 0
-        
-        Note over Executor,Command: wc читает из buffer, выводит "1 1 11"
-        Executor->>Command: execute(buffer, stdout, stderr)
+        Note over Executor,Command: wc из buffer
+        Executor->>Command: execute
         Command-->>Executor: 0
-        
-        Executor->>Environment: set("?", "0")
+        Executor->>Environment: set ?
         Executor-->>Shell: 0
         deactivate Executor
-        
         Shell->>User: вывод результата
     end
-    
     deactivate Shell
 ```
 
@@ -1121,7 +1085,7 @@ flowchart TB
     
     subgraph ShellInterpreter["Shell Interpreter"]
         subgraph Core["Core"]
-            Shell[Shell<br/>главный модуль]
+            Shell[Shell]
             ENV[Environment]
         end
         
@@ -1186,17 +1150,20 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    A[Ввод пользователя<br/>'echo $HOME ∣ wc'] --> B[Substitutor]
-    B -->|"echo /home/user ∣ wc"| C[Lexer]
-    C -->|"Tokens: [WORD, WORD, PIPE, WORD]"| D[Parser]
-    D -->|"AST: ParsedPipeline"| E[PipelineBuilder]
-    E -->|"Pipeline объект"| F[Executor]
+    A[Ввод пользователя] --> B[Substitutor]
+    B --> C[Lexer]
+    C --> D[Parser]
+    D --> E[PipelineBuilder]
+    E --> F[Executor]
     F --> G[EchoCommand]
-    G -->|"/home/user\n"| H[WcCommand]
-    H -->|"1 1 11\n"| I[stdout]
-    
-    ENV[(Environment)] -.->|"HOME=/home/user"| B
-    F -.->|"set ? = 0"| ENV
+    G --> H[WcCommand]
+    H --> I[stdout]
+    B -->|подстановка| C
+    C -->|токены| D
+    D -->|AST| E
+    E -->|Pipeline| F
+    ENV[(Environment)] -.-> B
+    F -.-> ENV
 ```
 
 ---
@@ -1340,7 +1307,12 @@ shell/
 | Буферизация pipe | Большие объёмы данных могут переполнить буфер | Потоковая обработка или лимит буфера |
 | Зомби-процессы | Внешние команды могут оставлять зомби | Корректный `waitpid()` с обработкой сигналов |
 
-### C.2 Ограничения реализации
+### C.2 Устойчивость к ошибкам
+
+- **Шелл не должен падать из‑за пользовательского ввода**: весь цикл обработки строки (подстановка → лексер → парсер → построение пайпа → выполнение) обёрнут в try/catch в `processLine`. При любом исключении в stderr выводится диагностика, в `$?` записывается 1, управление возвращается в REPL.
+- Ошибки команд (ненулевой код возврата, сообщения в stderr) обрабатываются самими командами и не приводят к падению интерпретатора.
+
+### C.3 Ограничения реализации
 
 - Не поддерживаются фоновые задачи (`&`)
 - Не поддерживается перенаправление в файлы (`>`, `<`, `>>`)
