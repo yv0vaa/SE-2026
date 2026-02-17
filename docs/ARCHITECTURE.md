@@ -24,7 +24,7 @@
 
 Система представляет собой интерпретатор командной оболочки (shell), предоставляющий пользователю интерактивный интерфейс для выполнения команд. Интерпретатор поддерживает:
 
-- Встроенные команды (`cat`, `echo`, `wc`, `pwd`, `exit`)
+- Встроенные команды (`cat`, `echo`, `wc`, `pwd`, `grep`, `exit`)
 - Запуск внешних программ
 - Пайплайны (конвейеры команд)
 - Переменные окружения и их подстановку
@@ -37,7 +37,7 @@
 | Интерактивность | Цикл чтения-выполнения-вывода (REPL) |
 | Пайплайны | Поддержка конвейеров команд через `\|` |
 | Переменные | Хранение, подстановка и модификация переменных окружения |
-| Встроенные команды | Реализация `cat`, `echo`, `wc`, `pwd`, `exit` |
+| Встроенные команды | Реализация `cat`, `echo`, `wc`, `pwd`, `grep`, `exit` |
 | Внешние программы | Запуск любых исполняемых файлов системы |
 
 ---
@@ -574,6 +574,35 @@ private:
 
 **Важно**: Команда `exit` **не завершает процесс напрямую**. Она устанавливает флаг, который проверяется в главном цикле REPL. Это позволяет корректно завершить все ресурсы.
 
+#### 7.4.6 GrepCommand
+
+```cpp
+class GrepCommand : public Command {
+public:
+    int execute(std::istream& in, std::ostream& out, std::ostream& err) override;
+    void setArguments(const std::vector<std::string>& args) override;
+    std::string getName() const override { return "grep"; }
+
+private:
+    std::vector<std::string> args_;
+    std::string pattern_;
+    bool case_insensitive_ = false;
+    bool word_only_ = false;
+    int lines_after_ = 0;
+    std::vector<std::string> filenames_;
+    // ...
+};
+```
+
+**Поведение**:
+- Поиск по регулярному выражению (ECMAScript, `std::regex`) в строках ввода или в указанных файлах.
+- **-w** — только целое слово (граница: не буква/цифра/подчёркивание по `std::isalnum` и `'_'`).
+- **-i** — регистронезависимый поиск (`std::regex::icase`).
+- **-A N** — печать N строк после совпадения (-A 0 — только строка совпадения); при пересечении областей строки выводятся один раз.
+- Разбор аргументов выполняется с использованием библиотеки CLI11 (определение опций); паттерн и файлы выделяются из `args` вручную, чтобы не смешивать их с именем программы при вызове парсера.
+
+**Коды возврата**: 0 — есть совпадения; 1 — нет совпадений или ошибка файла; 2 — ошибка использования (нет паттерна, неверный -A).
+
 ### 7.5 Внешние команды
 
 ```cpp
@@ -943,6 +972,15 @@ classDiagram
         +wasExitRequested() bool
         +getExitCode() int
     }
+    class GrepCommand {
+        -vector args_
+        -string pattern_
+        -bool case_insensitive_
+        -bool word_only_
+        -int lines_after_
+        -vector filenames_
+        +execute(in, out, err) int
+    }
     class ExternalCommand {
         -string programPath
         -vector args
@@ -997,6 +1035,7 @@ classDiagram
     Command <|-- WcCommand
     Command <|-- PwdCommand
     Command <|-- ExitCommand
+    Command <|-- GrepCommand
     Command <|-- ExternalCommand
     CommandFactory --> Command
     CommandFactory --> Environment
@@ -1109,6 +1148,7 @@ flowchart TB
             WC[WcCommand]
             PWD[PwdCommand]
             EXIT[ExitCommand]
+            GREP[GrepCommand]
             EXT[ExternalCommand]
         end
     end
@@ -1134,6 +1174,7 @@ flowchart TB
     CF --> WC
     CF --> PWD
     CF --> EXIT
+    CF --> GREP
     CF --> EXT
     
     PB --> PL
@@ -1258,7 +1299,8 @@ shell/
 │       │   ├── wc_command.hpp
 │       │   ├── pwd_command.hpp
 │       │   ├── exit_command.hpp
-│       │   └── external_command.hpp
+│       │   ├── external_command.hpp
+│       │   └── grep_command.hpp
 │       ├── command_factory.hpp
 │       ├── pipeline.hpp
 │       ├── pipeline_builder.hpp
@@ -1277,7 +1319,8 @@ shell/
 │   │   ├── wc_command.cpp
 │   │   ├── pwd_command.cpp
 │   │   ├── exit_command.cpp
-│   │   └── external_command.cpp
+│   │   ├── external_command.cpp
+│   │   └── grep_command.cpp
 │   ├── command_factory.cpp
 │   ├── pipeline.cpp
 │   ├── pipeline_builder.cpp

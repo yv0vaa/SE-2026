@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <fstream>
 #include <sstream>
 
@@ -6,6 +7,7 @@
 #include "shell/commands/cat_command.hpp"
 #include "shell/commands/echo_command.hpp"
 #include "shell/commands/exit_command.hpp"
+#include "shell/commands/grep_command.hpp"
 #include "shell/commands/pwd_command.hpp"
 #include "shell/commands/wc_command.hpp"
 #include "shell/environment.hpp"
@@ -251,4 +253,126 @@ TEST_F(CommandsTest, ExitWithCode) {
     EXPECT_EQ(result, 42);
     EXPECT_TRUE(cmd.wasExitRequested());
     EXPECT_EQ(cmd.getExitCode(), 42);
+}
+
+// ============== Grep Tests ==============
+
+TEST_F(CommandsTest, GrepGetName) {
+    GrepCommand cmd;
+    EXPECT_EQ(cmd.getName(), "grep");
+}
+
+TEST_F(CommandsTest, GrepBasicMatch) {
+    GrepCommand cmd;
+    cmd.setArguments({"foo"});
+
+    std::istringstream input("line one\nfoo bar\nbaz\n");
+    int result = cmd.execute(input, output, errors);
+
+    EXPECT_EQ(result, 0);
+    EXPECT_EQ(output.str(), "foo bar\n");
+}
+
+TEST_F(CommandsTest, GrepNoMatch) {
+    GrepCommand cmd;
+    cmd.setArguments({"xyz"});
+
+    std::istringstream input("line one\nfoo bar\n");
+    int result = cmd.execute(input, output, errors);
+
+    EXPECT_EQ(result, 1);
+    EXPECT_TRUE(output.str().empty());
+}
+
+TEST_F(CommandsTest, GrepCaseInsensitive) {
+    GrepCommand cmd;
+    cmd.setArguments({"-i", "minimal"});
+
+    std::istringstream input("MINIMAL\nminimal\nMinimal\n");
+    int result = cmd.execute(input, output, errors);
+
+    EXPECT_EQ(result, 0);
+    std::string out = output.str();
+    EXPECT_TRUE(out.find("MINIMAL") != std::string::npos);
+    EXPECT_TRUE(out.find("minimal") != std::string::npos);
+    EXPECT_TRUE(out.find("Minimal") != std::string::npos);
+}
+
+TEST_F(CommandsTest, GrepWordBoundaryMatch) {
+    GrepCommand cmd;
+    cmd.setArguments({"-w", "foo"});
+
+    std::istringstream input("foo bar\nfoobar\nfoo\n");
+    int result = cmd.execute(input, output, errors);
+
+    EXPECT_EQ(result, 0);
+    EXPECT_TRUE(output.str().find("foo bar") != std::string::npos);
+    EXPECT_TRUE(output.str().find("foo\n") != std::string::npos);
+    EXPECT_TRUE(output.str().find("foobar") == std::string::npos);
+}
+
+TEST_F(CommandsTest, GrepWordBoundaryNoMatch) {
+    GrepCommand cmd;
+    cmd.setArguments({"-w", "foo"});
+
+    std::istringstream input("foobar\n");
+    int result = cmd.execute(input, output, errors);
+
+    EXPECT_EQ(result, 1);
+    EXPECT_TRUE(output.str().empty());
+}
+
+TEST_F(CommandsTest, GrepAfterContext) {
+    GrepCommand cmd;
+    cmd.setArguments({"-A", "1", "II"});
+
+    std::istringstream input("first\nII\nnext\nlast\n");
+    int result = cmd.execute(input, output, errors);
+
+    EXPECT_EQ(result, 0);
+    EXPECT_EQ(output.str(), "II\nnext\n");
+}
+
+TEST_F(CommandsTest, GrepAfterContextOverlapping) {
+    GrepCommand cmd;
+    cmd.setArguments({"-A", "2", "x"});
+
+    std::istringstream input("a\nx\nb\nx\nc\n");
+    int result = cmd.execute(input, output, errors);
+
+    EXPECT_EQ(result, 0);
+    std::string out = output.str();
+    EXPECT_TRUE(out.find("x") != std::string::npos);
+    EXPECT_TRUE(out.find("b") != std::string::npos);
+    EXPECT_TRUE(out.find("c") != std::string::npos);
+    EXPECT_EQ(std::count(out.begin(), out.end(), '\n'), 4u);
+}
+
+TEST_F(CommandsTest, GrepFromFile) {
+    const std::string filename = "/tmp/test_grep_file.txt";
+    {
+        std::ofstream f(filename);
+        f << "alpha\nМинимальный синтаксис grep\nbeta\n";
+    }
+
+    GrepCommand cmd;
+    cmd.setArguments({"Минимальный", filename});
+
+    int result = cmd.execute(emptyInput, output, errors);
+
+    EXPECT_EQ(result, 0);
+    EXPECT_TRUE(output.str().find("Минимальный синтаксис grep") != std::string::npos);
+
+    std::remove(filename.c_str());
+}
+
+TEST_F(CommandsTest, GrepMissingPatternReturnsError) {
+    GrepCommand cmd;
+    cmd.setArguments({"-i"});
+
+    std::istringstream input("any\n");
+    int result = cmd.execute(input, output, errors);
+
+    EXPECT_EQ(result, 2);
+    EXPECT_FALSE(errors.str().empty());
 }

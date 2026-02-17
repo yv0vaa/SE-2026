@@ -4,6 +4,7 @@
 #include "shell/commands/echo_command.hpp"
 #include "shell/commands/exit_command.hpp"
 #include "shell/commands/external_command.hpp"
+#include "shell/commands/grep_command.hpp"
 #include "shell/commands/pwd_command.hpp"
 #include "shell/commands/wc_command.hpp"
 
@@ -37,6 +38,8 @@ void CommandFactory::registerBuiltins() {
     builtinFactories_["pwd"] = []() { return std::make_unique<PwdCommand>(); };
 
     builtinFactories_["exit"] = []() { return std::make_unique<ExitCommand>(); };
+
+    builtinFactories_["grep"] = []() { return std::make_unique<GrepCommand>(); };
 }
 
 }  // namespace shell

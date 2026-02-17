@@ -124,7 +124,8 @@ TEST_F(PipelineTest, CommandFactoryBuiltins) {
     EXPECT_TRUE(factory.isBuiltin("wc"));
     EXPECT_TRUE(factory.isBuiltin("pwd"));
     EXPECT_TRUE(factory.isBuiltin("exit"));
+    EXPECT_TRUE(factory.isBuiltin("grep"));
 
     EXPECT_FALSE(factory.isBuiltin("ls"));
-    EXPECT_FALSE(factory.isBuiltin("grep"));
+    EXPECT_FALSE(factory.isBuiltin("curl"));
 }
