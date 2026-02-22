@@ -1,5 +1,6 @@
 #include "shell/commands/external_command.hpp"
 
+#include <csignal>
 #include <cstring>
 #include <sstream>
 
@@ -77,14 +78,17 @@ int ExternalCommand::execute(std::istream& in, std::ostream& out, std::ostream& 
     close(stdinPipe[0]);
     close(stdoutPipe[1]);
 
-    // Отправляем входные данные
+    // Отправляем входные данные. На Linux запись в pipe при уже закрытом читателе
+    // даёт SIGPIPE и убивает процесс (например, echo x | false). Игнорируем SIGPIPE.
+    std::signal(SIGPIPE, SIG_IGN);
+
     std::stringstream inputBuffer;
     inputBuffer << in.rdbuf();
     std::string inputData = inputBuffer.str();
 
     if (!inputData.empty()) {
         ssize_t written = write(stdinPipe[1], inputData.c_str(), inputData.size());
-        (void)written;  // Игнорируем возможные ошибки записи
+        (void)written;  // Игнорируем возможные ошибки записи (в т.ч. EPIPE)
     }
     close(stdinPipe[1]);
 

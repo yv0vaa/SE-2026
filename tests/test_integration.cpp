@@ -163,3 +163,26 @@ TEST_F(IntegrationTest, EchoWithQuotedSpaces) {
 
     EXPECT_EQ(capturedOutput.str(), "hello world\n");
 }
+
+TEST_F(IntegrationTest, GrepFromFile) {
+    Shell shell;
+
+    std::ofstream f("/tmp/grep_integration.txt");
+    f << "alpha\nfoo bar\nbeta\n";
+    f.close();
+
+    int result = shell.processLine("grep foo /tmp/grep_integration.txt");
+
+    EXPECT_EQ(result, 0);
+    EXPECT_EQ(capturedOutput.str(), "foo bar\n");
+
+    std::remove("/tmp/grep_integration.txt");
+}
+
+TEST_F(IntegrationTest, PipelineEchoToGrep) {
+    Shell shell;
+    int result = shell.processLine("echo foo | grep foo");
+
+    EXPECT_EQ(result, 0);
+    EXPECT_EQ(capturedOutput.str(), "foo\n");
+}

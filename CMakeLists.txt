@@ -9,6 +9,15 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Export compile commands for clang-tidy
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# CLI11 — парсинг аргументов для встроенной команды grep
+include(FetchContent)
+FetchContent_Declare(
+    CLI11
+    GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+    GIT_TAG v2.4.1
+)
+FetchContent_MakeAvailable(CLI11)
+
 # Options
 option(BUILD_TESTING "Build tests" OFF)
 option(ENABLE_SANITIZER_ADDRESS "Enable address sanitizer" OFF)
@@ -48,11 +57,13 @@ set(SHELL_LIB_SOURCES
     src/shell/commands/pwd_command.cpp
     src/shell/commands/exit_command.cpp
     src/shell/commands/external_command.cpp
+    src/shell/commands/grep_command.cpp
 )
 
 # Create a library for reuse in tests
 add_library(shell_lib STATIC ${SHELL_LIB_SOURCES})
 target_include_directories(shell_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(shell_lib PUBLIC CLI11::CLI11)
 
 # Apply strict warnings only to our code, not dependencies
 target_compile_options(shell_lib PRIVATE
